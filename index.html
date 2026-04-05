@@ -6,605 +6,449 @@
     <title>Arenula — MCP Server Suite for s&box</title>
     <style>
         :root {
-            --bg: #0a0a0f;
-            --surface: #12121a;
-            --surface-hover: #1a1a26;
-            --border: #2a2a3a;
-            --text: #e0e0e8;
-            --text-muted: #8888a0;
-            --accent: #6c8cff;
-            --accent-glow: rgba(108, 140, 255, 0.15);
-            --green: #4ade80;
-            --yellow: #fbbf24;
-            --red: #f87171;
-            --purple: #a78bfa;
-            --cyan: #22d3ee;
+            --bg: #0c0c14;
+            --surface: #13131e;
+            --border: #232336;
+            --text: #d8d8e4;
+            --text-dim: #7c7c96;
+            --accent: #7b9aff;
+            --green: #5ae892;
+            --yellow: #f5c842;
+            --red: #f07070;
+            --purple: #b094fa;
+            --cyan: #3cd8e8;
+            --mono: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', monospace;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+            font-family: 'Inter', 'Segoe UI', -apple-system, sans-serif;
             background: var(--bg);
             color: var(--text);
-            line-height: 1.6;
-            min-height: 100vh;
+            line-height: 1.65;
+            font-size: 15px;
         }
 
-        .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+        .wrap { max-width: 960px; margin: 0 auto; padding: 0 40px; }
 
-        /* Hero */
+        /* ── Hero ─────────────────────────────────── */
         .hero {
+            padding: 72px 0 56px;
             text-align: center;
-            padding: 80px 0 60px;
-            border-bottom: 1px solid var(--border);
         }
         .hero h1 {
-            font-size: 3.5rem;
+            font-size: 3rem;
             font-weight: 700;
-            letter-spacing: -0.02em;
-            background: linear-gradient(135deg, var(--accent), var(--purple));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            letter-spacing: -0.03em;
+            color: var(--text);
         }
-        .hero .subtitle {
-            font-size: 1.25rem;
-            color: var(--text-muted);
-            margin-top: 12px;
-            max-width: 600px;
-            margin-left: auto;
-            margin-right: auto;
+        .hero p {
+            color: var(--text-dim);
+            font-size: 1.1rem;
+            margin-top: 10px;
         }
-        .hero .stats {
+        .hero-stats {
             display: flex;
             justify-content: center;
-            gap: 48px;
-            margin-top: 36px;
-            flex-wrap: wrap;
+            gap: 56px;
+            margin-top: 40px;
         }
-        .stat { text-align: center; }
-        .stat .number {
-            font-size: 2.2rem;
+        .hero-stat .n {
+            font-size: 2rem;
             font-weight: 700;
             color: var(--accent);
+            line-height: 1;
         }
-        .stat .label {
+        .hero-stat .l {
+            font-size: 0.72rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-top: 4px;
+        }
+
+        /* ── Divider ──────────────────────────────── */
+        hr.sep {
+            border: none;
+            height: 1px;
+            background: var(--border);
+            margin: 0;
+        }
+
+        /* ── Section ──────────────────────────────── */
+        .section { padding: 56px 0; }
+        .section h2 {
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        .section > .wrap > p { color: var(--text-dim); margin-bottom: 28px; }
+
+        /* ── Server cards ─────────────────────────── */
+        .servers { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; }
+        .srv {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 24px;
+        }
+        .srv h3 { font-size: 1.05rem; color: var(--text); margin-bottom: 6px; }
+        .srv p { color: var(--text-dim); font-size: 0.88rem; margin-bottom: 12px; }
+        .srv-meta {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            border-top: 1px solid var(--border);
+            padding-top: 10px;
+            display: flex;
+            gap: 16px;
+        }
+
+        /* ── Tool list ────────────────────────────── */
+        .tools { display: grid; gap: 6px; }
+        .t {
+            display: grid;
+            grid-template-columns: 140px 1fr 60px;
+            gap: 12px;
+            align-items: baseline;
+            padding: 10px 16px;
+            border-radius: 6px;
+            background: var(--surface);
+            border: 1px solid transparent;
+        }
+        .t:nth-child(odd) { background: rgba(19,19,30,0.6); }
+        .t-name {
+            font-family: var(--mono);
+            font-size: 0.88rem;
+            font-weight: 600;
+            color: var(--cyan);
+        }
+        .t-acts {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            line-height: 1.6;
+        }
+        .t-acts code {
+            font-family: var(--mono);
+            font-size: 0.75rem;
+            color: var(--accent);
+            background: rgba(123,154,255,0.07);
+            padding: 1px 5px;
+            border-radius: 3px;
+        }
+        .t-n {
+            font-size: 0.78rem;
+            color: var(--text-dim);
+            text-align: right;
+        }
+
+        /* ── Architecture ─────────────────────────── */
+        .arch-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 8px;
+        }
+        .arch-diagram {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 28px;
+            font-family: var(--mono);
+            font-size: 0.78rem;
+            line-height: 1.8;
+            white-space: pre;
+            color: var(--text-dim);
+        }
+        .arch-diagram .a { color: var(--accent); }
+        .arch-diagram .g { color: var(--green); }
+        .arch-diagram .y { color: var(--yellow); }
+        .arch-diagram .c { color: var(--cyan); }
+        .arch-detail { display: flex; flex-direction: column; gap: 14px; }
+        .arch-item h4 {
             font-size: 0.85rem;
-            color: var(--text-muted);
+            color: var(--text);
+            margin-bottom: 3px;
+        }
+        .arch-item p {
+            font-size: 0.82rem;
+            color: var(--text-dim);
+            margin: 0;
+        }
+        .arch-item code {
+            font-family: var(--mono);
+            font-size: 0.76rem;
+            color: var(--accent);
+            background: rgba(123,154,255,0.07);
+            padding: 1px 5px;
+            border-radius: 3px;
+        }
+
+        /* ── Comparison table ─────────────────────── */
+        table { width: 100%; border-collapse: collapse; }
+        th, td {
+            text-align: left;
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.88rem;
+        }
+        th {
+            color: var(--text-dim);
+            font-weight: 600;
+            font-size: 0.75rem;
             text-transform: uppercase;
             letter-spacing: 0.08em;
         }
+        .g { color: var(--green); font-weight: 600; }
+        .r { color: var(--red); }
+        .d { color: var(--text-dim); }
 
-        .badge {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            letter-spacing: 0.04em;
-            text-transform: uppercase;
-            margin-top: 24px;
-        }
-        .badge.green { background: rgba(74, 222, 128, 0.12); color: var(--green); border: 1px solid rgba(74, 222, 128, 0.25); }
-
-        /* Section */
-        section { padding: 60px 0; border-bottom: 1px solid var(--border); }
-        section:last-child { border-bottom: none; }
-        h2 {
-            font-size: 1.75rem;
-            font-weight: 600;
-            margin-bottom: 24px;
-            color: var(--text);
-        }
-        h3 {
-            font-size: 1.1rem;
-            font-weight: 600;
-            margin-bottom: 12px;
-            color: var(--accent);
-        }
-        p { color: var(--text-muted); margin-bottom: 16px; }
-
-        /* Server cards */
-        .servers {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 20px;
-            margin-top: 24px;
-        }
-        .server-card {
+        /* ── Principles ───────────────────────────── */
+        .princ { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+        .pr {
             background: var(--surface);
             border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 28px;
-            transition: border-color 0.2s, box-shadow 0.2s;
+            border-radius: 8px;
+            padding: 18px;
         }
-        .server-card:hover {
-            border-color: var(--accent);
-            box-shadow: 0 0 30px var(--accent-glow);
-        }
-        .server-card .icon {
-            font-size: 2rem;
-            margin-bottom: 12px;
-        }
-        .server-card h3 { margin-bottom: 8px; }
-        .server-card .meta {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            margin-top: 12px;
-            padding-top: 12px;
-            border-top: 1px solid var(--border);
-        }
-        .server-card .meta span {
-            display: inline-block;
-            margin-right: 12px;
-        }
+        .pr h4 { font-size: 0.88rem; color: var(--accent); margin-bottom: 4px; }
+        .pr p { font-size: 0.82rem; color: var(--text-dim); margin: 0; }
 
-        /* Tool table */
-        .tool-grid {
-            display: grid;
-            gap: 12px;
-            margin-top: 16px;
+        /* ── Install ──────────────────────────────── */
+        .install h3 {
+            font-size: 0.95rem;
+            color: var(--text);
+            margin-top: 24px;
+            margin-bottom: 8px;
         }
-        .tool-row {
-            display: grid;
-            grid-template-columns: 160px 1fr auto;
-            gap: 16px;
-            align-items: start;
+        .install h3:first-child { margin-top: 0; }
+        pre.code {
             background: var(--surface);
             border: 1px solid var(--border);
             border-radius: 8px;
             padding: 16px 20px;
-            transition: border-color 0.2s;
-        }
-        .tool-row:hover { border-color: var(--accent); }
-        .tool-name {
-            font-family: 'Cascadia Code', 'Fira Code', monospace;
-            font-size: 0.9rem;
-            font-weight: 600;
-            color: var(--cyan);
-        }
-        .tool-actions {
+            font-family: var(--mono);
             font-size: 0.82rem;
-            color: var(--text-muted);
-            line-height: 1.5;
-        }
-        .tool-actions code {
-            display: inline-block;
-            background: rgba(108, 140, 255, 0.08);
-            color: var(--accent);
-            padding: 1px 6px;
-            border-radius: 4px;
-            font-family: 'Cascadia Code', 'Fira Code', monospace;
-            font-size: 0.78rem;
-            margin: 1px 2px;
-        }
-        .tool-count {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            white-space: nowrap;
-            padding-top: 2px;
-        }
-
-        /* Category labels */
-        .category {
-            display: inline-block;
-            padding: 3px 10px;
-            border-radius: 4px;
-            font-size: 0.7rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-            margin-bottom: 8px;
-        }
-        .cat-read { background: rgba(74, 222, 128, 0.1); color: var(--green); }
-        .cat-write { background: rgba(251, 191, 36, 0.1); color: var(--yellow); }
-        .cat-new { background: rgba(167, 139, 250, 0.1); color: var(--purple); }
-        .cat-async { background: rgba(34, 211, 238, 0.1); color: var(--cyan); }
-
-        /* Comparison table */
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 16px;
-        }
-        th, td {
-            text-align: left;
-            padding: 12px 16px;
-            border-bottom: 1px solid var(--border);
-            font-size: 0.9rem;
-        }
-        th {
-            color: var(--text-muted);
-            font-weight: 600;
-            font-size: 0.8rem;
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-        }
-        td { color: var(--text); }
-        tr:hover td { background: var(--surface-hover); }
-        .val-good { color: var(--green); font-weight: 600; }
-        .val-bad { color: var(--red); }
-        .val-neutral { color: var(--text-muted); }
-
-        /* Architecture diagram */
-        .arch {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 32px;
-            font-family: 'Cascadia Code', 'Fira Code', monospace;
-            font-size: 0.82rem;
-            line-height: 1.7;
-            color: var(--text-muted);
-            overflow-x: auto;
-            white-space: pre;
-            margin-top: 16px;
-        }
-        .arch .hl { color: var(--accent); }
-        .arch .gr { color: var(--green); }
-        .arch .yl { color: var(--yellow); }
-        .arch .cy { color: var(--cyan); }
-
-        /* Principles */
-        .principles {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 16px;
-            margin-top: 16px;
-        }
-        .principle {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 20px;
-        }
-        .principle h4 {
-            font-size: 0.9rem;
-            color: var(--accent);
-            margin-bottom: 6px;
-        }
-        .principle p {
-            font-size: 0.85rem;
-            margin-bottom: 0;
-        }
-
-        /* Install */
-        .install-code {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 20px;
-            font-family: 'Cascadia Code', 'Fira Code', monospace;
-            font-size: 0.85rem;
             color: var(--text);
             overflow-x: auto;
-            margin-top: 12px;
-            line-height: 1.6;
+            line-height: 1.5;
         }
-        .install-code .comment { color: var(--text-muted); }
-        .install-code .path { color: var(--green); }
+        pre.code .cm { color: var(--text-dim); }
+        pre.code .p { color: var(--green); }
 
-        /* Attribution */
-        .attribution {
+        /* ── Footer ───────────────────────────────── */
+        .footer {
             text-align: center;
-            padding: 40px 0;
-            color: var(--text-muted);
-            font-size: 0.85rem;
+            padding: 36px 0;
+            font-size: 0.8rem;
+            color: var(--text-dim);
         }
-        .attribution a {
-            color: var(--accent);
-            text-decoration: none;
-        }
-        .attribution a:hover { text-decoration: underline; }
+        .footer a { color: var(--accent); text-decoration: none; }
 
-        /* Print / PDF styles */
+        /* ── Print ────────────────────────────────── */
         @media print {
-            @page {
-                size: A4;
-                margin: 0;
-            }
+            @page { size: A4; margin: 0; }
             body {
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
-                background: var(--bg) !important;
             }
-            .hero { padding: 40px 0 30px; }
-            section { padding: 30px 0; break-inside: avoid; }
-            .tool-row { break-inside: avoid; }
-            .server-card { break-inside: avoid; }
-            .principle { break-inside: avoid; }
-            table tr { break-inside: avoid; }
-            .arch { break-inside: avoid; }
-            .attribution { padding: 20px 0; }
+            .hero { padding: 48px 0 36px; }
+            .section { padding: 32px 0; }
+            .t, .srv, .pr, .arch-diagram, pre.code, table tr { break-inside: avoid; }
         }
 
-        @media (max-width: 768px) {
-            .servers { grid-template-columns: 1fr; }
-            .principles { grid-template-columns: 1fr; }
-            .tool-row { grid-template-columns: 1fr; gap: 8px; }
-            .hero h1 { font-size: 2.5rem; }
-            .hero .stats { flex-direction: column; gap: 24px; }
+        @media (max-width: 700px) {
+            .servers, .princ, .arch-grid { grid-template-columns: 1fr; }
+            .t { grid-template-columns: 1fr; }
+            .hero-stats { flex-direction: column; gap: 20px; }
         }
     </style>
 </head>
 <body>
 
-<!-- Hero -->
 <div class="hero">
-    <div class="container">
+    <div class="wrap">
         <h1>Arenula</h1>
-        <p class="subtitle">MCP server suite for the s&box game engine. Connects AI coding assistants to the editor in real time.</p>
-        <div class="stats">
-            <div class="stat"><div class="number">19</div><div class="label">Tools</div></div>
-            <div class="stat"><div class="number">~120</div><div class="label">Actions</div></div>
-            <div class="stat"><div class="number">3</div><div class="label">Servers</div></div>
-            <div class="stat"><div class="number">8-13K</div><div class="label">Tokens</div></div>
+        <p>MCP server suite for the s&box game engine</p>
+        <div class="hero-stats">
+            <div class="hero-stat"><div class="n">19</div><div class="l">Tools</div></div>
+            <div class="hero-stat"><div class="n">~120</div><div class="l">Actions</div></div>
+            <div class="hero-stat"><div class="n">3</div><div class="l">Servers</div></div>
+            <div class="hero-stat"><div class="n">8-13K</div><div class="l">Tokens</div></div>
         </div>
-        <div class="badge green">All Phases Complete</div>
     </div>
 </div>
 
-<!-- Three Servers -->
-<section>
-    <div class="container">
+<hr class="sep">
+
+<div class="section">
+    <div class="wrap">
         <h2>Three Servers, One Suite</h2>
+        <p>Each server has a distinct role. The Editor runs inside s&box; the API and Docs servers run standalone.</p>
         <div class="servers">
-            <div class="server-card">
-                <div class="icon">&#9881;</div>
+            <div class="srv">
                 <h3>Editor</h3>
-                <p>Scene manipulation, compilation, asset management, terrain editing. Runs inside the s&box editor as a C# plugin.</p>
-                <div class="meta">
-                    <span>19 tools</span>
-                    <span>SSE on :8098</span>
-                    <span>C#</span>
-                </div>
+                <p>Scene manipulation, code compilation, asset management, terrain editing. Runs inside the s&box editor as a C# library plugin.</p>
+                <div class="srv-meta"><span>19 tools</span><span>SSE :8098</span><span>C#</span></div>
             </div>
-            <div class="server-card">
-                <div class="icon">&#128218;</div>
+            <div class="srv">
                 <h3>API</h3>
                 <p>Offline type and member reference. Indexes ~1,800 types and ~15,000 members from the s&box CDN schema.</p>
-                <div class="meta">
-                    <span>8 tools</span>
-                    <span>stdio</span>
-                    <span>TypeScript</span>
-                </div>
+                <div class="srv-meta"><span>8 tools</span><span>stdio</span><span>TypeScript</span></div>
             </div>
-            <div class="server-card">
-                <div class="icon">&#128196;</div>
+            <div class="srv">
                 <h3>Docs</h3>
                 <p>Narrative documentation fetcher. Scrapes docs.facepunch.com, converts to Markdown, caches with LRU.</p>
-                <div class="meta">
-                    <span>3 tools</span>
-                    <span>stdio</span>
-                    <span>TypeScript</span>
+                <div class="srv-meta"><span>3 tools</span><span>stdio</span><span>TypeScript</span></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<hr class="sep">
+
+<div class="section">
+    <div class="wrap">
+        <h2>Editor Tools</h2>
+        <p>19 omnibus tools. Each takes a required <code>action</code> parameter to select the operation.</p>
+        <div class="tools">
+            <div class="t"><div class="t-name">scene</div><div class="t-acts"><code>summary</code> <code>hierarchy</code> <code>statistics</code> <code>find</code> <code>find_in_radius</code> <code>get_details</code> <code>prefab_instances</code></div><div class="t-n">7</div></div>
+            <div class="t"><div class="t-name">gameobject</div><div class="t-acts"><code>create</code> <code>destroy</code> <code>duplicate</code> <code>reparent</code> <code>rename</code> <code>enable</code> <code>set_tags</code> <code>set_transform</code> <code>batch_transform</code></div><div class="t-n">9</div></div>
+            <div class="t"><div class="t-name">component</div><div class="t-acts"><code>add</code> <code>remove</code> <code>set_property</code> <code>set_enabled</code> <code>get_properties</code> <code>get_types</code> <code>copy</code></div><div class="t-n">7</div></div>
+            <div class="t"><div class="t-name">compile</div><div class="t-acts"><code>trigger</code> <code>status</code> <code>errors</code> <code>generate_solution</code> <code>wait</code></div><div class="t-n">5</div></div>
+            <div class="t"><div class="t-name">prefab</div><div class="t-acts"><code>instantiate</code> <code>get_structure</code> <code>get_instances</code> <code>break</code> <code>update</code> <code>create</code> <code>save_overrides</code> <code>revert</code> <code>get_overrides</code></div><div class="t-n">9</div></div>
+            <div class="t"><div class="t-name">asset_query</div><div class="t-acts"><code>browse</code> <code>search</code> <code>open</code> <code>get_dependencies</code> <code>get_model_info</code> <code>get_material_properties</code> <code>get_mesh_info</code> <code>get_bounds</code> <code>get_unsaved</code> <code>get_status</code> <code>get_json</code> <code>get_references</code></div><div class="t-n">12</div></div>
+            <div class="t"><div class="t-name">asset_manage</div><div class="t-acts"><code>create</code> <code>delete</code> <code>rename</code> <code>move</code> <code>save</code> <code>reload</code> <code>get_references</code></div><div class="t-n">7</div></div>
+            <div class="t"><div class="t-name">editor</div><div class="t-acts"><code>select</code> <code>get_selected</code> <code>set_selected</code> <code>clear_selection</code> <code>frame_selection</code> <code>get_play_state</code> <code>start_play</code> <code>stop_play</code> <code>get_log</code> <code>save_scene</code> <code>save_scene_as</code> <code>undo</code> <code>redo</code> <code>console_list</code> <code>console_run</code> <code>open_code_file</code> <code>get_preferences</code> <code>set_preference</code></div><div class="t-n">18</div></div>
+            <div class="t"><div class="t-name">session</div><div class="t-acts"><code>list</code> <code>set_active</code> <code>load_scene</code></div><div class="t-n">3</div></div>
+            <div class="t"><div class="t-name">lighting</div><div class="t-acts"><code>create</code> <code>configure</code> <code>create_skybox</code> <code>set_skybox</code></div><div class="t-n">4</div></div>
+            <div class="t"><div class="t-name">physics</div><div class="t-acts"><code>add_collider</code> <code>configure_collider</code> <code>add_rigidbody</code> <code>create_model_physics</code> <code>create_character_controller</code> <code>create_joint</code></div><div class="t-n">6</div></div>
+            <div class="t"><div class="t-name">audio</div><div class="t-acts"><code>create</code> <code>configure</code></div><div class="t-n">2</div></div>
+            <div class="t"><div class="t-name">effects</div><div class="t-acts"><code>create</code> <code>configure_particle</code> <code>configure_post_processing</code></div><div class="t-n">3</div></div>
+            <div class="t"><div class="t-name">camera</div><div class="t-acts"><code>create</code> <code>configure</code></div><div class="t-n">2</div></div>
+            <div class="t"><div class="t-name">mesh</div><div class="t-acts"><code>create_block</code> <code>create_clutter</code> <code>set_face_material</code> <code>set_texture_params</code> <code>set_vertex_position</code> <code>set_vertex_color</code> <code>set_vertex_blend</code> <code>get_info</code></div><div class="t-n">8</div></div>
+            <div class="t"><div class="t-name">navmesh</div><div class="t-acts"><code>create_agent</code> <code>create_area</code> <code>create_link</code> <code>generate</code> <code>get_status</code> <code>query_path</code></div><div class="t-n">6</div></div>
+            <div class="t"><div class="t-name">cloud</div><div class="t-acts"><code>search</code> <code>get_package</code> <code>mount</code></div><div class="t-n">3</div></div>
+            <div class="t"><div class="t-name">project</div><div class="t-acts"><code>get_collision</code> <code>set_collision_rule</code> <code>get_input</code> <code>get_info</code></div><div class="t-n">4</div></div>
+            <div class="t"><div class="t-name">terrain</div><div class="t-acts"><code>create</code> <code>configure</code> <code>get_info</code> <code>paint_material</code> <code>sync</code></div><div class="t-n">5</div></div>
+        </div>
+    </div>
+</div>
+
+<hr class="sep">
+
+<div class="section">
+    <div class="wrap">
+        <h2>Architecture</h2>
+        <p>28 C# source files organized into Core infrastructure and per-tool Handlers.</p>
+        <div class="arch-grid">
+            <div class="arch-diagram"><span class="a">AI Client</span>
+    |
+  HTTP / SSE
+    |
+<span class="g">ArenulaMcpServer</span>
+    |
+<span class="y">RpcDispatcher</span>
+    |
+    +------------------+------------------+
+    |                  |                  |
+<span class="c">Async Path</span>         <span class="y">Console Path</span>       <span class="g">Main Thread</span>
+compile, cloud     exception safe     all other tools
+    |                  |                  |
+ Handler            Handler            Handler
+(background)     (sync isolation)   (GameTask.MainThread)</div>
+            <div class="arch-detail">
+                <div class="arch-item">
+                    <h4>Core (8 files)</h4>
+                    <p><code>ArenulaMcpServer</code> HTTP/SSE listener and session management. <code>RpcDispatcher</code> extracts tool name + action, routes to the correct handler. <code>ToolRegistry</code> holds all 19 tool schemas. <code>HandlerBase</code> provides response formatting, pagination, and error helpers. <code>SceneHelpers</code> handles scene resolution and tree walking.</p>
+                </div>
+                <div class="arch-item">
+                    <h4>Handlers (20 files)</h4>
+                    <p>One file per tool. Each exports a <code>Handle(action, args)</code> method with an internal switch on the action enum. Async handlers (<code>CompileHandler</code>, <code>CloudHandler</code>) use <code>HandleAsync</code> and dispatch before <code>GameTask.MainThread()</code> to prevent deadlocks.</p>
+                </div>
+                <div class="arch-item">
+                    <h4>Threading Model</h4>
+                    <p>Scene APIs must run on the main thread. The dispatcher calls <code>await GameTask.MainThread()</code> before invoking sync handlers. Async handlers (network/compile) run on the background thread and may internally switch to main thread for specific sub-operations.</p>
                 </div>
             </div>
         </div>
     </div>
-</section>
+</div>
 
-<!-- Editor Tools -->
-<section>
-    <div class="container">
-        <h2>Editor Tools — 19 Omnibus Tools</h2>
-        <p>Each tool uses an <code>action</code> parameter to select the operation. Grouped by resource, not operation type.</p>
+<hr class="sep">
 
-        <div class="tool-grid">
-            <div class="tool-row">
-                <div><span class="category cat-read">Read</span><br><span class="tool-name">scene</span></div>
-                <div class="tool-actions"><code>summary</code> <code>hierarchy</code> <code>statistics</code> <code>find</code> <code>find_in_radius</code> <code>get_details</code> <code>prefab_instances</code></div>
-                <div class="tool-count">7 actions</div>
-            </div>
-            <div class="tool-row">
-                <div><span class="category cat-write">Write</span><br><span class="tool-name">gameobject</span></div>
-                <div class="tool-actions"><code>create</code> <code>destroy</code> <code>duplicate</code> <code>reparent</code> <code>rename</code> <code>enable</code> <code>set_tags</code> <code>set_transform</code> <code>batch_transform</code></div>
-                <div class="tool-count">9 actions</div>
-            </div>
-            <div class="tool-row">
-                <div><span class="category cat-write">Write</span><br><span class="tool-name">component</span></div>
-                <div class="tool-actions"><code>add</code> <code>remove</code> <code>set_property</code> <code>set_enabled</code> <code>get_properties</code> <code>get_types</code> <code>copy</code></div>
-                <div class="tool-count">7 actions</div>
-            </div>
-            <div class="tool-row">
-                <div><span class="category cat-new">New</span><br><span class="tool-name">compile</span></div>
-                <div class="tool-actions"><code>trigger</code> <code>status</code> <code>errors</code> <code>generate_solution</code> <code>wait</code></div>
-                <div class="tool-count">5 actions</div>
-            </div>
-            <div class="tool-row">
-                <div><span class="category cat-write">Write</span><br><span class="tool-name">prefab</span></div>
-                <div class="tool-actions"><code>instantiate</code> <code>get_structure</code> <code>get_instances</code> <code>break</code> <code>update</code> <code>create</code> <code>save_overrides</code> <code>revert</code> <code>get_overrides</code></div>
-                <div class="tool-count">9 actions</div>
-            </div>
-            <div class="tool-row">
-                <div><span class="category cat-read">Read</span><br><span class="tool-name">asset_query</span></div>
-                <div class="tool-actions"><code>browse</code> <code>search</code> <code>open</code> <code>get_dependencies</code> <code>get_model_info</code> <code>get_material_properties</code> <code>get_mesh_info</code> <code>get_bounds</code> <code>get_unsaved</code> <code>get_status</code> <code>get_json</code> <code>get_references</code></div>
-                <div class="tool-count">12 actions</div>
-            </div>
-            <div class="tool-row">
-                <div><span class="category cat-new">New</span><br><span class="tool-name">asset_manage</span></div>
-                <div class="tool-actions"><code>create</code> <code>delete</code> <code>rename</code> <code>move</code> <code>save</code> <code>reload</code> <code>get_references</code></div>
-                <div class="tool-count">7 actions</div>
-            </div>
-            <div class="tool-row">
-                <div><span class="category cat-write">Write</span><br><span class="tool-name">editor</span></div>
-                <div class="tool-actions"><code>select</code> <code>get_selected</code> <code>set_selected</code> <code>clear_selection</code> <code>frame_selection</code> <code>get_play_state</code> <code>start_play</code> <code>stop_play</code> <code>get_log</code> <code>save_scene</code> <code>save_scene_as</code> <code>undo</code> <code>redo</code> <code>console_list</code> <code>console_run</code> <code>open_code_file</code> <code>get_preferences</code> <code>set_preference</code></div>
-                <div class="tool-count">18 actions</div>
-            </div>
-            <div class="tool-row">
-                <div><span class="category cat-write">Write</span><br><span class="tool-name">session</span></div>
-                <div class="tool-actions"><code>list</code> <code>set_active</code> <code>load_scene</code></div>
-                <div class="tool-count">3 actions</div>
-            </div>
-            <div class="tool-row">
-                <div><span class="category cat-write">Write</span><br><span class="tool-name">lighting</span></div>
-                <div class="tool-actions"><code>create</code> <code>configure</code> <code>create_skybox</code> <code>set_skybox</code></div>
-                <div class="tool-count">4 actions</div>
-            </div>
-            <div class="tool-row">
-                <div><span class="category cat-write">Write</span><br><span class="tool-name">physics</span></div>
-                <div class="tool-actions"><code>add_collider</code> <code>configure_collider</code> <code>add_rigidbody</code> <code>create_model_physics</code> <code>create_character_controller</code> <code>create_joint</code></div>
-                <div class="tool-count">6 actions</div>
-            </div>
-            <div class="tool-row">
-                <div><span class="category cat-write">Write</span><br><span class="tool-name">audio</span></div>
-                <div class="tool-actions"><code>create</code> <code>configure</code></div>
-                <div class="tool-count">2 actions</div>
-            </div>
-            <div class="tool-row">
-                <div><span class="category cat-write">Write</span><br><span class="tool-name">effects</span></div>
-                <div class="tool-actions"><code>create</code> <code>configure_particle</code> <code>configure_post_processing</code></div>
-                <div class="tool-count">3 actions</div>
-            </div>
-            <div class="tool-row">
-                <div><span class="category cat-write">Write</span><br><span class="tool-name">camera</span></div>
-                <div class="tool-actions"><code>create</code> <code>configure</code></div>
-                <div class="tool-count">2 actions</div>
-            </div>
-            <div class="tool-row">
-                <div><span class="category cat-write">Write</span><br><span class="tool-name">mesh</span></div>
-                <div class="tool-actions"><code>create_block</code> <code>create_clutter</code> <code>set_face_material</code> <code>set_texture_params</code> <code>set_vertex_position</code> <code>set_vertex_color</code> <code>set_vertex_blend</code> <code>get_info</code></div>
-                <div class="tool-count">8 actions</div>
-            </div>
-            <div class="tool-row">
-                <div><span class="category cat-new">New</span><br><span class="tool-name">navmesh</span></div>
-                <div class="tool-actions"><code>create_agent</code> <code>create_area</code> <code>create_link</code> <code>generate</code> <code>get_status</code> <code>query_path</code></div>
-                <div class="tool-count">6 actions</div>
-            </div>
-            <div class="tool-row">
-                <div><span class="category cat-async">Async</span><br><span class="tool-name">cloud</span></div>
-                <div class="tool-actions"><code>search</code> <code>get_package</code> <code>mount</code></div>
-                <div class="tool-count">3 actions</div>
-            </div>
-            <div class="tool-row">
-                <div><span class="category cat-write">Write</span><br><span class="tool-name">project</span></div>
-                <div class="tool-actions"><code>get_collision</code> <code>set_collision_rule</code> <code>get_input</code> <code>get_info</code></div>
-                <div class="tool-count">4 actions</div>
-            </div>
-            <div class="tool-row">
-                <div><span class="category cat-new">New</span><br><span class="tool-name">terrain</span></div>
-                <div class="tool-actions"><code>create</code> <code>configure</code> <code>get_info</code> <code>paint_material</code> <code>sync</code></div>
-                <div class="tool-count">5 actions</div>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- Architecture -->
-<section>
-    <div class="container">
-        <h2>Architecture</h2>
-        <div class="arch"><span class="hl">AI Client</span> ──&gt; HTTP/SSE ──&gt; <span class="gr">ArenulaMcpServer</span> (inside s&amp;box editor)
-                              │
-                         <span class="yl">RpcDispatcher</span>
-                              │
-              ┌───────────────┼───────────────┐
-              │               │               │
-       <span class="cy">async tools</span>      <span class="yl">console path</span>    <span class="gr">main thread</span>
-      (compile, cloud)  (exception       (all other
-       background        isolation)       scene tools)
-              │               │               │
-           Handler         Handler         Handler</div>
-        <p style="margin-top:16px;">28 C# files: 8 Core infrastructure + 20 Handlers (one per tool). Async tools dispatch before <code>GameTask.MainThread()</code> to avoid deadlocks.</p>
-    </div>
-</section>
-
-<!-- vs Ozmium -->
-<section>
-    <div class="container">
-        <h2>Arenula vs Ozmium (Original)</h2>
+<div class="section">
+    <div class="wrap">
+        <h2>Compared to Ozmium</h2>
+        <p>Arenula is a ground-up rewrite of <a href="https://github.com/ozmium7/ozmium-mcp-server-for-sbox" style="color:var(--accent)">Ozmium MCP Server</a> by ozmium7.</p>
         <table>
-            <thead>
-                <tr><th>Metric</th><th>Ozmium</th><th>Arenula</th></tr>
-            </thead>
+            <thead><tr><th>Metric</th><th>Ozmium</th><th>Arenula</th></tr></thead>
             <tbody>
-                <tr><td>Tools</td><td class="val-bad">105</td><td class="val-good">19</td></tr>
-                <tr><td>Total actions</td><td class="val-neutral">105</td><td class="val-good">~120</td></tr>
-                <tr><td>Token cost (schemas)</td><td class="val-bad">~42,000</td><td class="val-good">~8-13,000</td></tr>
-                <tr><td>MCP best practices</td><td class="val-bad">None</td><td class="val-good">Full Anthropic compliance</td></tr>
-                <tr><td>Code compilation</td><td class="val-bad">Not available</td><td class="val-good">5 actions (trigger, status, errors, wait, generate_solution)</td></tr>
-                <tr><td>Asset CRUD</td><td class="val-bad">Read-only</td><td class="val-good">Create, delete, rename, move, save</td></tr>
-                <tr><td>Prefab authoring</td><td class="val-bad">Instantiate only</td><td class="val-good">Create, save overrides, revert, get overrides</td></tr>
-                <tr><td>Terrain</td><td class="val-bad">None</td><td class="val-good">Create, configure, paint, sync</td></tr>
-                <tr><td>NavMesh</td><td class="val-bad">Place only</td><td class="val-good">Generate, query paths, get status</td></tr>
-                <tr><td>Cloud assets</td><td class="val-bad">Deadlocked</td><td class="val-good">Working (async dispatch)</td></tr>
-                <tr><td>Error messages</td><td class="val-bad">Generic strings</td><td class="val-good">Structured with suggestions + fuzzy matching</td></tr>
-                <tr><td>Pagination</td><td class="val-bad">Truncation only</td><td class="val-good">offset/limit with has_more metadata</td></tr>
-                <tr><td>Response format</td><td class="val-bad">Raw dumps</td><td class="val-good">Canonical {id, name} tuples, concise/detailed modes</td></tr>
-                <tr><td>Cross-platform</td><td class="val-bad">Windows DllImport</td><td class="val-good">Clean (no P/Invoke)</td></tr>
+                <tr><td>Tools</td><td class="r">105</td><td class="g">19</td></tr>
+                <tr><td>Total actions</td><td class="d">105</td><td class="g">~120</td></tr>
+                <tr><td>Token cost</td><td class="r">~42,000</td><td class="g">~8-13,000</td></tr>
+                <tr><td>MCP best practices</td><td class="r">None</td><td class="g">Full Anthropic compliance</td></tr>
+                <tr><td>Code compilation</td><td class="r">Not available</td><td class="g">trigger, status, errors, wait</td></tr>
+                <tr><td>Asset management</td><td class="r">Read-only</td><td class="g">Create, delete, rename, move</td></tr>
+                <tr><td>Prefab authoring</td><td class="r">Instantiate only</td><td class="g">Create, save overrides, revert</td></tr>
+                <tr><td>Terrain</td><td class="r">None</td><td class="g">Create, paint, configure, sync</td></tr>
+                <tr><td>Cloud assets</td><td class="r">Deadlocked</td><td class="g">Working (async dispatch)</td></tr>
+                <tr><td>Error messages</td><td class="r">Generic</td><td class="g">Structured with suggestions</td></tr>
+                <tr><td>Pagination</td><td class="r">Truncation</td><td class="g">offset/limit with metadata</td></tr>
+                <tr><td>Cross-platform</td><td class="r">Windows P/Invoke</td><td class="g">Clean</td></tr>
             </tbody>
         </table>
     </div>
-</section>
+</div>
 
-<!-- Design Principles -->
-<section>
-    <div class="container">
+<hr class="sep">
+
+<div class="section">
+    <div class="wrap">
         <h2>Design Principles</h2>
-        <p>Following <a href="https://www.anthropic.com/engineering/writing-tools-for-agents" style="color:var(--accent)">Anthropic's official MCP guidance</a>.</p>
-        <div class="principles">
-            <div class="principle">
-                <h4>Omnibus Tools</h4>
-                <p>Related operations grouped with <code>action</code> enum. Fewer tools = less selection ambiguity for the LLM.</p>
-            </div>
-            <div class="principle">
-                <h4>Rich Descriptions</h4>
-                <p>3-4 sentences per tool. What it does, when to use it, when NOT to use it, what actions are available.</p>
-            </div>
-            <div class="principle">
-                <h4>Trimmed Responses</h4>
-                <p>Canonical {id, name} tuples. Pagination with offset/limit. 16K char truncation. Concise/detailed modes.</p>
-            </div>
-            <div class="principle">
-                <h4>Actionable Errors</h4>
-                <p>Structured {error, action, suggestion} with fuzzy type matching. "Did you mean 'Rigidbody'?"</p>
-            </div>
-            <div class="principle">
-                <h4>Schema Safety</h4>
-                <p><code>additionalProperties: false</code> on every schema. Enum constraints on action parameters. Prevents hallucination.</p>
-            </div>
-            <div class="principle">
-                <h4>Async Safety</h4>
-                <p>Network tools (compile, cloud) dispatch before MainThread. Never <code>.GetAwaiter().GetResult()</code> on main thread.</p>
-            </div>
+        <p>Following <a href="https://www.anthropic.com/engineering/writing-tools-for-agents" style="color:var(--accent)">Anthropic's MCP tool design guidance</a>.</p>
+        <div class="princ">
+            <div class="pr"><h4>Omnibus Tools</h4><p>Related operations grouped with action enum parameter. Fewer tools means less selection ambiguity for the LLM.</p></div>
+            <div class="pr"><h4>Rich Descriptions</h4><p>3-4 sentences per tool explaining what it does, when to use it, and when not to. Negative guidance prevents misuse.</p></div>
+            <div class="pr"><h4>Trimmed Responses</h4><p>Canonical {id, name} tuples. Pagination with offset/limit. 16K character truncation. Concise and detailed modes.</p></div>
+            <div class="pr"><h4>Actionable Errors</h4><p>Structured errors with action context and suggestions. Fuzzy type matching: "Did you mean Rigidbody?"</p></div>
+            <div class="pr"><h4>Schema Safety</h4><p>additionalProperties: false on every schema. Enum constraints on actions and sub-types. Prevents hallucination.</p></div>
+            <div class="pr"><h4>Async Safety</h4><p>Network tools dispatch before MainThread to avoid deadlocks. Never block the main thread with synchronous waits.</p></div>
         </div>
     </div>
-</section>
+</div>
 
-<!-- Install -->
-<section>
-    <div class="container">
+<hr class="sep">
+
+<div class="section install">
+    <div class="wrap">
         <h2>Installation</h2>
         <h3>1. Copy the Editor plugin</h3>
-        <div class="install-code"><span class="comment"># Copy into your s&box project's Libraries folder</span>
-<span class="path">Arenula-MCP/editor/</span>  &rarr;  <span class="path">YourProject/Libraries/arenula_mcp/</span></div>
-
-        <h3 style="margin-top:24px">2. Build the API and Docs servers</h3>
-        <div class="install-code"><span class="comment"># API server</span>
-cd Arenula-MCP/api && npm install && npm run build
-
-<span class="comment"># Docs server</span>
-cd Arenula-MCP/docs && npm install && npm run build</div>
-
-        <h3 style="margin-top:24px">3. Configure your .mcp.json</h3>
-        <div class="install-code">{
+        <pre class="code"><span class="cm"># Copy into your s&box project's Libraries folder</span>
+<span class="p">Arenula-MCP/editor/</span>  -->  <span class="p">YourProject/Libraries/arenula_mcp/</span></pre>
+        <h3>2. Build the API and Docs servers</h3>
+        <pre class="code"><span class="cm"># From the Arenula-MCP directory</span>
+cd api && npm install && npm run build
+cd ../docs && npm install && npm run build</pre>
+        <h3>3. Configure .mcp.json in your project root</h3>
+        <pre class="code">{
   "mcpServers": {
-    <span class="path">"editor"</span>: { "type": "sse", "url": "http://localhost:8098/sse" },
-    <span class="path">"api"</span>:    { "command": "node", "args": ["path/to/Arenula-MCP/api/dist/index.js"] },
-    <span class="path">"docs"</span>:   { "command": "node", "args": ["path/to/Arenula-MCP/docs/dist/index.js"] }
+    <span class="p">"editor"</span>: { "type": "sse", "url": "http://localhost:8098/sse" },
+    <span class="p">"api"</span>:    { "command": "node", "args": ["path/to/Arenula-MCP/api/dist/index.js"] },
+    <span class="p">"docs"</span>:   { "command": "node", "args": ["path/to/Arenula-MCP/docs/dist/index.js"] }
   }
-}</div>
-
-        <h3 style="margin-top:24px">4. Open s&box</h3>
-        <p>Arenula Editor compiles automatically and starts the MCP server on port 8098. Tools appear as <code>mcp__editor__*</code>, <code>mcp__api__*</code>, <code>mcp__docs__*</code>.</p>
+}</pre>
+        <h3>4. Open s&box</h3>
+        <p>Arenula Editor compiles automatically and starts the MCP server on port 8098.</p>
     </div>
-</section>
+</div>
 
-<!-- Attribution -->
-<div class="attribution">
-    <div class="container">
-        <p>Based on <a href="https://github.com/ozmium7/ozmium-mcp-server-for-sbox">Ozmium MCP Server</a> by ozmium7 &middot; API from <a href="https://github.com/sofianebel/sbox-api-mcp">sbox-api-mcp</a> by sofianebel &middot; Docs from <a href="https://github.com/Nyx000/sbox-docs-mcp">sbox-docs-mcp</a></p>
-        <p style="margin-top:8px">GPL-3.0 (Editor) &middot; MIT (API, Docs)</p>
+<hr class="sep">
+
+<div class="footer">
+    <div class="wrap">
+        Based on <a href="https://github.com/ozmium7/ozmium-mcp-server-for-sbox">Ozmium MCP Server</a> by ozmium7 &middot; API from <a href="https://github.com/sofianebel/sbox-api-mcp">sbox-api-mcp</a> by sofianebel &middot; Docs from <a href="https://github.com/Nyx000/sbox-docs-mcp">sbox-docs-mcp</a><br>
+        GPL-3.0 (Editor) &middot; MIT (API, Docs)
     </div>
 </div>
 
