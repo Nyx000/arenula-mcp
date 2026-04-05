@@ -379,32 +379,6 @@ compile, cloud     exception safe     all other tools
 
 <div class="section">
     <div class="wrap">
-        <h2>Compared to Ozmium</h2>
-        <p>Arenula is a ground-up rewrite of <a href="https://github.com/ozmium7/ozmium-mcp-server-for-sbox" style="color:var(--accent)">Ozmium MCP Server</a> by ozmium7.</p>
-        <table>
-            <thead><tr><th>Metric</th><th>Ozmium</th><th>Arenula</th></tr></thead>
-            <tbody>
-                <tr><td>Tools</td><td class="r">105</td><td class="g">19</td></tr>
-                <tr><td>Total actions</td><td class="d">105</td><td class="g">~120</td></tr>
-                <tr><td>Token cost</td><td class="r">~42,000</td><td class="g">~8-13,000</td></tr>
-                <tr><td>MCP best practices</td><td class="r">None</td><td class="g">Full Anthropic compliance</td></tr>
-                <tr><td>Code compilation</td><td class="r">Not available</td><td class="g">trigger, status, errors, wait</td></tr>
-                <tr><td>Asset management</td><td class="r">Read-only</td><td class="g">Create, delete, rename, move</td></tr>
-                <tr><td>Prefab authoring</td><td class="r">Instantiate only</td><td class="g">Create, save overrides, revert</td></tr>
-                <tr><td>Terrain</td><td class="r">None</td><td class="g">Create, paint, configure, sync</td></tr>
-                <tr><td>Cloud assets</td><td class="r">Deadlocked</td><td class="g">Working (async dispatch)</td></tr>
-                <tr><td>Error messages</td><td class="r">Generic</td><td class="g">Structured with suggestions</td></tr>
-                <tr><td>Pagination</td><td class="r">Truncation</td><td class="g">offset/limit with metadata</td></tr>
-                <tr><td>Cross-platform</td><td class="r">Windows P/Invoke</td><td class="g">Clean</td></tr>
-            </tbody>
-        </table>
-    </div>
-</div>
-
-<hr class="sep">
-
-<div class="section">
-    <div class="wrap">
         <h2>Design Principles</h2>
         <p>Following <a href="https://www.anthropic.com/engineering/writing-tools-for-agents" style="color:var(--accent)">Anthropic's MCP tool design guidance</a>.</p>
         <div class="princ">
