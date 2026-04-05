@@ -54,6 +54,15 @@
             gap: 56px;
             margin-top: 40px;
         }
+        .hero-art {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 16px;
+        }
+        .hero-art svg {
+            width: 100%;
+            height: 100%;
+        }
         .hero-stat .n {
             font-size: 2rem;
             font-weight: 700;
@@ -143,39 +152,146 @@
         }
 
         /* ── Architecture ─────────────────────────── */
-        .arch-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-top: 8px;
+        .arch-flow {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0;
+            margin-top: 20px;
+            margin-bottom: 40px;
         }
-        .arch-diagram {
+        .arch-node {
             background: var(--surface);
             border: 1px solid var(--border);
             border-radius: 10px;
-            padding: 28px;
+            padding: 18px 48px;
+            text-align: center;
+            position: relative;
+            min-width: 240px;
+        }
+        .arch-node .node-title {
             font-family: var(--mono);
-            font-size: 0.78rem;
-            line-height: 1.8;
-            white-space: pre;
+            font-size: 0.95rem;
+            font-weight: 600;
+        }
+        .arch-node .node-sub {
+            font-size: 0.75rem;
             color: var(--text-dim);
+            margin-top: 4px;
         }
-        .arch-diagram .a { color: var(--accent); }
-        .arch-diagram .g { color: var(--green); }
-        .arch-diagram .y { color: var(--yellow); }
-        .arch-diagram .c { color: var(--cyan); }
-        .arch-detail { display: flex; flex-direction: column; gap: 14px; }
-        .arch-item h4 {
-            font-size: 0.85rem;
+        .arch-node.client { border-color: var(--accent); }
+        .arch-node.client .node-title { color: var(--accent); }
+        .arch-node.server { border-color: var(--green); }
+        .arch-node.server .node-title { color: var(--green); }
+        .arch-node.dispatch { border-color: var(--yellow); }
+        .arch-node.dispatch .node-title { color: var(--yellow); }
+
+        .arch-connector {
+            width: 2px;
+            height: 36px;
+            background: var(--border);
+            position: relative;
+        }
+        .arch-connector-label {
+            font-size: 0.72rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            padding: 10px 0;
+            text-align: center;
+        }
+
+        .arch-branches {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            position: relative;
+            width: 100%;
+            max-width: 780px;
+        }
+        .arch-branches::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: calc(50% - 300px);
+            width: 600px;
+            height: 2px;
+            background: var(--border);
+        }
+        .arch-branch {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+            max-width: 240px;
+            position: relative;
+        }
+        .arch-branch::before {
+            content: '';
+            width: 2px;
+            height: 32px;
+            background: var(--border);
+        }
+        .arch-branch-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 20px 22px;
+            text-align: center;
+            width: 100%;
+        }
+        .arch-branch-card .branch-title {
+            font-family: var(--mono);
+            font-size: 0.88rem;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+        .arch-branch-card .branch-desc {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            line-height: 1.6;
+        }
+        .arch-branch:nth-child(1) .arch-branch-card { border-color: var(--cyan); }
+        .arch-branch:nth-child(1) .branch-title { color: var(--cyan); }
+        .arch-branch:nth-child(2) .arch-branch-card { border-color: var(--yellow); }
+        .arch-branch:nth-child(2) .branch-title { color: var(--yellow); }
+        .arch-branch:nth-child(3) .arch-branch-card { border-color: var(--green); }
+        .arch-branch:nth-child(3) .branch-title { color: var(--green); }
+
+        .arch-details {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 14px;
+        }
+        .arch-detail-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 20px;
+        }
+        .arch-detail-card h4 {
+            font-size: 0.88rem;
             color: var(--text);
-            margin-bottom: 3px;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
-        .arch-item p {
+        .arch-detail-card h4 .count {
+            font-size: 0.68rem;
+            font-weight: 600;
+            color: var(--accent);
+            background: rgba(123,154,255,0.12);
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
+        .arch-detail-card p {
             font-size: 0.82rem;
             color: var(--text-dim);
             margin: 0;
+            line-height: 1.55;
         }
-        .arch-item code {
+        .arch-detail-card code {
             font-family: var(--mono);
             font-size: 0.76rem;
             color: var(--accent);
@@ -251,15 +367,78 @@
             body {
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
+                font-size: 12px;
             }
-            .wrap { max-width: 100%; padding: 0 32px; }
-            .arch-grid { grid-template-columns: 1fr; }
-            .arch-diagram { font-size: 0.72rem; line-height: 1.5; padding: 20px; }
-            .t, .srv, .pr, .arch-diagram, pre.code { break-inside: avoid; }
+            .wrap { max-width: 100%; padding: 0 28px; }
+            /* Hero */
+            .hero-art { width: 40px; height: 40px; margin-bottom: 2px; }
+            .hero { padding: 12px 0 8px; }
+            .hero h1 { font-size: 2.2rem; }
+            .hero p { font-size: 0.95rem; margin-top: 6px; }
+            .hero-stats { margin-top: 20px; gap: 36px; }
+            .hero-stat .n { font-size: 1.6rem; }
+            .hero-stat .l { font-size: 0.65rem; margin-top: 2px; }
+            /* Sections */
+            .section { padding: 22px 0; }
+            .section h2 { font-size: 1.2rem; margin-bottom: 3px; }
+            .section > .wrap > p { margin-bottom: 14px; font-size: 0.8rem; }
+            hr.sep { margin: 0; }
+            /* Server cards */
+            .servers { gap: 8px; }
+            .srv { padding: 12px 14px; border-radius: 8px; }
+            .srv h3 { font-size: 0.92rem; margin-bottom: 3px; }
+            .srv p { font-size: 0.78rem; margin-bottom: 8px; }
+            .srv-meta { font-size: 0.68rem; padding-top: 7px; }
+            /* Tool list — must fit on same page as hero+servers */
+            .tools-sep { display: none; }
+            .section:nth-child(5) { padding: 14px 0 6px; } /* tighten tools section */
+            .section:nth-child(5) > .wrap > p { margin-bottom: 10px; }
+            .tools { gap: 0; break-inside: avoid; }
+            .t { padding: 2px 9px; border-radius: 2px; grid-template-columns: 100px 1fr 26px; gap: 8px; }
+            .t-name { font-size: 0.72rem; }
+            .t-acts { font-size: 0.62rem; line-height: 1.3; }
+            .t-acts code { font-size: 0.6rem; padding: 0 3px; border-radius: 2px; }
+            .t-n { font-size: 0.62rem; }
+            /* Architecture */
+            .arch-flow { margin-top: 6px; margin-bottom: 14px; }
+            .arch-node { padding: 8px 20px; min-width: 160px; border-radius: 8px; }
+            .arch-node .node-title { font-size: 0.8rem; }
+            .arch-node .node-sub { font-size: 0.65rem; }
+            .arch-connector { height: 14px; }
+            .arch-connector-label { font-size: 0.6rem; padding: 3px 0; }
+            .arch-branch::before { height: 16px; }
+            .arch-branch-card { padding: 10px 12px; border-radius: 8px; }
+            .arch-branch-card .branch-title { font-size: 0.74rem; margin-bottom: 4px; }
+            .arch-branch-card .branch-desc { font-size: 0.64rem; line-height: 1.5; }
+            .arch-branches { max-width: 100%; gap: 0; }
+            .arch-branches::before { left: 15%; width: 70%; }
+            .arch-details { gap: 8px; }
+            .arch-detail-card { padding: 12px; border-radius: 8px; }
+            .arch-detail-card h4 { font-size: 0.8rem; margin-bottom: 4px; }
+            .arch-detail-card h4 .count { font-size: 0.6rem; }
+            .arch-detail-card p { font-size: 0.72rem; }
+            .arch-detail-card code { font-size: 0.66rem; }
+            /* Principles — must stay together on page 2 */
+            .princ-sep { display: none; }
+            .section:nth-child(8) { padding: 18px 0; break-inside: avoid; }
+            .princ { gap: 8px; break-inside: avoid; }
+            .pr { padding: 12px 14px; border-radius: 6px; }
+            .pr h4 { font-size: 0.85rem; margin-bottom: 2px; }
+            .pr p { font-size: 0.76rem; }
+            /* Install */
+            .install h3 { font-size: 0.85rem; margin-top: 14px; margin-bottom: 4px; }
+            pre.code { padding: 10px 14px; font-size: 0.72rem; border-radius: 6px; }
+            /* Footer */
+            .footer { padding: 16px 0; font-size: 0.7rem; }
+            .t, .srv, .pr, .arch-node, .arch-branch-card, .arch-detail-card, pre.code { break-inside: avoid; }
         }
 
         @media (max-width: 700px) {
-            .servers, .princ, .arch-grid { grid-template-columns: 1fr; }
+            .servers, .princ, .arch-details { grid-template-columns: 1fr; }
+            .arch-branches { flex-direction: column; align-items: center; gap: 10px; }
+            .arch-branches::before { display: none; }
+            .arch-branch::before { display: none; }
+            .arch-branch { max-width: 260px; }
             .t { grid-template-columns: 1fr; }
             .hero-stats { flex-direction: column; gap: 20px; }
         }
@@ -270,6 +449,69 @@
 <div class="hero">
     <div class="wrap">
         <h1>Arenula</h1>
+        <div class="hero-art">
+            <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                <!-- Ambient drift particles -->
+                <circle cx="40" cy="35" r="1.5" fill="#7b9aff" opacity="0.25">
+                    <animate attributeName="cy" values="35;30;35" dur="6s" repeatCount="indefinite"/>
+                </circle>
+                <circle cx="160" cy="50" r="1" fill="#5ae892" opacity="0.2">
+                    <animate attributeName="cy" values="50;44;50" dur="5s" repeatCount="indefinite"/>
+                </circle>
+                <circle cx="55" cy="155" r="1.2" fill="#f5c842" opacity="0.2">
+                    <animate attributeName="cy" values="155;150;155" dur="7s" repeatCount="indefinite"/>
+                </circle>
+                <circle cx="150" cy="145" r="1" fill="#b094fa" opacity="0.15">
+                    <animate attributeName="cy" values="145;140;145" dur="5.5s" repeatCount="indefinite"/>
+                </circle>
+
+                <!-- Soft glow behind grain -->
+                <radialGradient id="glow">
+                    <stop offset="0%" stop-color="#7b9aff" stop-opacity="0.12"/>
+                    <stop offset="100%" stop-color="#7b9aff" stop-opacity="0"/>
+                </radialGradient>
+                <circle cx="100" cy="95" r="55" fill="url(#glow)"/>
+
+                <!-- The grain of sand -->
+                <defs>
+                    <radialGradient id="grain-fill" cx="40%" cy="35%" r="60%">
+                        <stop offset="0%" stop-color="#f5c842"/>
+                        <stop offset="50%" stop-color="#d4a832"/>
+                        <stop offset="100%" stop-color="#a07820"/>
+                    </radialGradient>
+                    <radialGradient id="grain-shine" cx="35%" cy="30%" r="40%">
+                        <stop offset="0%" stop-color="#fff" stop-opacity="0.3"/>
+                        <stop offset="100%" stop-color="#fff" stop-opacity="0"/>
+                    </radialGradient>
+                </defs>
+
+                <!-- Grain shape — slightly irregular, organic -->
+                <ellipse cx="100" cy="96" rx="22" ry="19" fill="url(#grain-fill)" transform="rotate(-8 100 96)">
+                    <animate attributeName="cy" values="96;93;96" dur="4s" repeatCount="indefinite"/>
+                </ellipse>
+                <!-- Highlight -->
+                <ellipse cx="94" cy="90" rx="10" ry="8" fill="url(#grain-shine)" transform="rotate(-8 94 90)">
+                    <animate attributeName="cy" values="90;87;90" dur="4s" repeatCount="indefinite"/>
+                </ellipse>
+
+                <!-- Tiny scattered grains around it -->
+                <circle cx="68" cy="115" r="3" fill="#d4a832" opacity="0.5">
+                    <animate attributeName="cy" values="115;112;115" dur="4.5s" repeatCount="indefinite"/>
+                </circle>
+                <circle cx="135" cy="108" r="2.5" fill="#c49828" opacity="0.4">
+                    <animate attributeName="cy" values="108;105;108" dur="5s" repeatCount="indefinite"/>
+                </circle>
+                <circle cx="82" cy="78" r="2" fill="#e0b838" opacity="0.35">
+                    <animate attributeName="cy" values="78;75;78" dur="3.5s" repeatCount="indefinite"/>
+                </circle>
+                <circle cx="122" cy="82" r="1.5" fill="#d4a832" opacity="0.3">
+                    <animate attributeName="cy" values="82;79;82" dur="4.2s" repeatCount="indefinite"/>
+                </circle>
+                <circle cx="108" cy="118" r="2" fill="#c49828" opacity="0.3">
+                    <animate attributeName="cy" values="118;115;118" dur="5.5s" repeatCount="indefinite"/>
+                </circle>
+            </svg>
+        </div>
         <p>MCP server suite for the s&box game engine</p>
         <div class="hero-stats">
             <div class="hero-stat"><div class="n">19</div><div class="l">Tools</div></div>
@@ -336,41 +578,63 @@
     </div>
 </div>
 
-<hr class="sep">
+<hr class="sep tools-sep">
 
 <div class="section">
     <div class="wrap">
         <h2>Architecture</h2>
         <p>28 C# source files organized into Core infrastructure and per-tool Handlers.</p>
-        <div class="arch-grid">
-            <div class="arch-diagram"><span class="a">AI Client</span>
-    |
-  HTTP / SSE
-    |
-<span class="g">ArenulaMcpServer</span>
-    |
-<span class="y">RpcDispatcher</span>
-    |
-    +------------------+------------------+
-    |                  |                  |
-<span class="c">Async Path</span>         <span class="y">Console Path</span>       <span class="g">Main Thread</span>
-compile, cloud     exception safe     all other tools
-    |                  |                  |
- Handler            Handler            Handler
-(background)     (sync isolation)   (GameTask.MainThread)</div>
-            <div class="arch-detail">
-                <div class="arch-item">
-                    <h4>Core (8 files)</h4>
-                    <p><code>ArenulaMcpServer</code> HTTP/SSE listener and session management. <code>RpcDispatcher</code> extracts tool name + action, routes to the correct handler. <code>ToolRegistry</code> holds all 19 tool schemas. <code>HandlerBase</code> provides response formatting, pagination, and error helpers. <code>SceneHelpers</code> handles scene resolution and tree walking.</p>
+
+        <div class="arch-flow">
+            <div class="arch-node client">
+                <div class="node-title">AI Client</div>
+                <div class="node-sub">Claude Code, Cursor, Copilot, etc.</div>
+            </div>
+            <div class="arch-connector-label">HTTP / SSE</div>
+            <div class="arch-node server">
+                <div class="node-title">ArenulaMcpServer</div>
+                <div class="node-sub">Listener &middot; Session &middot; Port 8098</div>
+            </div>
+            <div class="arch-connector"></div>
+            <div class="arch-node dispatch">
+                <div class="node-title">RpcDispatcher</div>
+                <div class="node-sub">JSON-RPC &middot; Tool + Action routing</div>
+            </div>
+            <div class="arch-connector"></div>
+            <div class="arch-branches">
+                <div class="arch-branch">
+                    <div class="arch-branch-card">
+                        <div class="branch-title">Async Path</div>
+                        <div class="branch-desc">compile, cloud<br>Background thread<br>No deadlocks</div>
+                    </div>
                 </div>
-                <div class="arch-item">
-                    <h4>Handlers (20 files)</h4>
-                    <p>One file per tool. Each exports a <code>Handle(action, args)</code> method with an internal switch on the action enum. Async handlers (<code>CompileHandler</code>, <code>CloudHandler</code>) use <code>HandleAsync</code> and dispatch before <code>GameTask.MainThread()</code> to prevent deadlocks.</p>
+                <div class="arch-branch">
+                    <div class="arch-branch-card">
+                        <div class="branch-title">Console Path</div>
+                        <div class="branch-desc">console_list, console_run<br>Sync isolation<br>Exception safe</div>
+                    </div>
                 </div>
-                <div class="arch-item">
-                    <h4>Threading Model</h4>
-                    <p>Scene APIs must run on the main thread. The dispatcher calls <code>await GameTask.MainThread()</code> before invoking sync handlers. Async handlers (network/compile) run on the background thread and may internally switch to main thread for specific sub-operations.</p>
+                <div class="arch-branch">
+                    <div class="arch-branch-card">
+                        <div class="branch-title">Main Thread</div>
+                        <div class="branch-desc">All other tools<br>GameTask.MainThread()<br>Scene API access</div>
+                    </div>
                 </div>
+            </div>
+        </div>
+
+        <div class="arch-details">
+            <div class="arch-detail-card">
+                <h4>Core <span class="count">8 files</span></h4>
+                <p><code>ArenulaMcpServer</code> HTTP/SSE listener and session management. <code>RpcDispatcher</code> extracts tool name + action, routes to the correct handler. <code>ToolRegistry</code> holds all 19 tool schemas. <code>HandlerBase</code> provides response formatting, pagination, and error helpers. <code>SceneHelpers</code> handles scene resolution and tree walking.</p>
+            </div>
+            <div class="arch-detail-card">
+                <h4>Handlers <span class="count">20 files</span></h4>
+                <p>One file per tool. Each exports a <code>Handle(action, args)</code> method with an internal switch on the action enum. Async handlers (<code>CompileHandler</code>, <code>CloudHandler</code>) use <code>HandleAsync</code> and dispatch before <code>GameTask.MainThread()</code> to prevent deadlocks.</p>
+            </div>
+            <div class="arch-detail-card">
+                <h4>Threading Model</h4>
+                <p>Scene APIs must run on the main thread. The dispatcher calls <code>await GameTask.MainThread()</code> before invoking sync handlers. Async handlers (network/compile) run on the background thread and may internally switch to main thread for specific sub-operations.</p>
             </div>
         </div>
     </div>
@@ -393,7 +657,7 @@ compile, cloud     exception safe     all other tools
     </div>
 </div>
 
-<hr class="sep">
+<hr class="sep princ-sep">
 
 <div class="section install">
     <div class="wrap">
@@ -422,7 +686,7 @@ cd ../docs && npm install && npm run build</pre>
 
 <div class="footer">
     <div class="wrap">
-        Based on <a href="https://github.com/ozmium7/ozmium-mcp-server-for-sbox">Ozmium MCP Server</a> by ozmium7 &middot; API from <a href="https://github.com/sofianebel/sbox-api-mcp">sbox-api-mcp</a> by sofianebel &middot; Docs from <a href="https://github.com/Nyx000/sbox-docs-mcp">sbox-docs-mcp</a><br>
+        Based on <a href="https://github.com/ozmium7/ozmium-mcp-server-for-sbox">Ozmium MCP Server</a> by ozmium7 &middot; API from <a href="https://github.com/sofianebel/sbox-api-mcp">sbox-api-mcp</a> by sofianebel &middot; Docs from <a href="https://github.com/sofianebel/sbox-docs-mcp">sbox-docs-mcp</a> by sofianebel<br>
         GPL-3.0 (Editor) &middot; MIT (API, Docs)
     </div>
 </div>

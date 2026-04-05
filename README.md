@@ -1,27 +1,38 @@
 # Arenula
 
-MCP ([Model Context Protocol](https://modelcontextprotocol.io)) server suite for the [s&box](https://sbox.game) game engine. Connects AI coding assistants to the s&box editor in real time — reading scenes, creating objects, triggering compilation, managing assets, and more.
+MCP server suite for the [s&box](https://sbox.game) game engine. Connects AI coding assistants to the s&box editor — reading scenes, creating objects, compiling code, managing assets, and more.
 
-Based on [Ozmium MCP Server](https://github.com/ozmium7/ozmium-mcp-server-for-sbox) by ozmium7. Redesigned following [Anthropic's MCP best practices](https://www.anthropic.com/engineering/writing-tools-for-agents) — 19 omnibus tools with action parameters instead of 105 individual tools.
+*Arenula* — Latin for "grain of sand". One grain in the sandbox.
 
 ## Servers
 
-| Server | Purpose | Runtime | Transport |
-|---|---|---|---|
-| **Editor** | Scene manipulation, compilation, asset management | C# (s&box plugin) | SSE on localhost:8098 |
-| **API** | Offline type/member reference (~1,800 types) | Node.js (npx) | stdio |
-| **Docs** | Narrative documentation from docs.facepunch.com | Node.js | stdio |
+| Server | What it does | Runtime | Transport |
+|--------|-------------|---------|-----------|
+| **Editor** | Scene manipulation, compilation, assets, terrain | C# plugin inside s&box | SSE `:8098` |
+| **API** | Offline type/member reference (~1,800 types, ~15,000 members) | Node.js | stdio |
+| **Docs** | Narrative docs from docs.facepunch.com | Node.js | stdio |
 
-## Installation
+## Setup
 
-### Editor (required)
+### 1. Clone Arenula-MCP
 
-Copy the `editor/` folder into your s&box project's `Libraries/` directory:
+Clone or download this repo somewhere on your machine. This is where the API and Docs servers will live — they don't need to be inside your s&box project.
+
+```
+C:\Projects\Arenula-MCP\       <-- can be anywhere you like
+  editor/                      goes into your s&box project (step 2)
+  api/                         stays here, runs from here
+  docs/                        stays here, runs from here
+```
+
+### 2. Editor plugin
+
+Copy `editor/` into your s&box project's Libraries folder:
 
 ```
 YourProject/
   Libraries/
-    arenula_mcp/          <-- copy editor/ contents here
+    arenula_mcp/               <-- copy the contents of editor/ here
       Editor/
         Core/
         Handlers/
@@ -30,21 +41,19 @@ YourProject/
 
 Open s&box — Arenula compiles automatically and starts the MCP server on port 8098.
 
-### API (recommended)
+### 3. Build API & Docs
 
-No installation needed — runs via npx:
+From the Arenula-MCP root, install and build both Node.js servers:
 
 ```bash
-npx -y sbox-api-mcp
+npm run setup        # installs dependencies and builds both servers
 ```
 
-### Docs (optional)
+This builds `api/dist/index.js` and `docs/dist/index.js` — those are the files your AI client will point to.
 
-Clone [sbox-docs-mcp](https://github.com/Nyx000/sbox-docs-mcp) and build, or point to a local install.
+### 4. Configure your AI client
 
-### Claude Code / AI Client Configuration
-
-Copy `.mcp.json.example` to your project root as `.mcp.json` and adjust paths:
+Add a `.mcp.json` file to your s&box project root (or copy `.mcp.json.example`). Update the paths to where you cloned Arenula-MCP:
 
 ```json
 {
@@ -54,82 +63,64 @@ Copy `.mcp.json.example` to your project root as `.mcp.json` and adjust paths:
       "url": "http://localhost:8098/sse"
     },
     "api": {
-      "command": "npx",
-      "args": ["-y", "sbox-api-mcp"],
+      "command": "node",
+      "args": ["C:/Projects/Arenula-MCP/api/dist/index.js"],
       "env": {
-        "SBOX_API_URL": "https://cdn.sbox.game/releases/2026-04-02-21-06-53.zip.json"
+        "SBOX_API_URL": "https://cdn.sbox.game/releases/..."
       }
     },
     "docs": {
       "command": "node",
-      "args": ["path/to/sbox-docs-mcp/dist/index.js"]
+      "args": ["C:/Projects/Arenula-MCP/docs/dist/index.js"]
     }
   }
 }
 ```
 
-Tools appear as `mcp__editor__*`, `mcp__api__*`, `mcp__docs__*`.
+Replace `C:/Projects/Arenula-MCP` with wherever you cloned the repo. Get the latest API schema URL from [sbox.game/api/schema](https://sbox.game/api/schema) (click Download, copy URL).
 
-## Editor Tools (19 tools, ~120 actions)
+Tools appear as `mcp__editor__*`, `mcp__api__*`, `mcp__docs__*` in your AI client.
 
-Each tool uses an `action` parameter to select the operation.
+## Editor Tools
 
-| Tool | Actions | Description |
-|---|---|---|
-| `scene` | summary, hierarchy, statistics, find, find_in_radius, get_details, prefab_instances | Read-only scene queries |
-| `gameobject` | create, destroy, duplicate, reparent, rename, enable, set_tags, set_transform, batch_transform | Create and modify GameObjects |
-| `component` | add, remove, set_property, set_enabled, get_properties, get_types, copy | Manage components on GameObjects |
-| `compile` | trigger, status, errors, generate_solution, wait | Code compilation and diagnostics |
-| `prefab` | instantiate, get_structure, get_instances, break, update, create, save_overrides, revert, get_overrides | Prefab workflow and authoring |
-| `asset_query` | browse, search, open, get_dependencies, get_model_info, get_material_properties, get_mesh_info, get_bounds, get_unsaved, get_status, get_json, get_references | Browse and inspect assets |
-| `asset_manage` | create, delete, rename, move, save, reload, get_references | Create, rename, move, delete assets |
-| `editor` | select, get_selected, set_selected, clear_selection, frame_selection, get_play_state, start_play, stop_play, get_log, save_scene, save_scene_as, undo, redo, console_list, console_run, open_code_file, get_preferences, set_preference | Editor control, selection, console, undo/redo |
-| `session` | list, set_active, load_scene | Editor session management |
-| `lighting` | create, configure, create_skybox, set_skybox | All light types and skybox |
-| `physics` | add_collider, configure_collider, add_rigidbody, create_model_physics, create_character_controller, create_joint | Colliders, rigidbodies, joints |
-| `audio` | create, configure | Sound points, zones, listeners |
-| `effects` | create, configure_particle, configure_post_processing | Particles, fog, beams, ropes |
-| `camera` | create, configure | Camera components |
-| `mesh` | create_block, create_clutter, set_face_material, set_texture_params, set_vertex_position, set_vertex_color, set_vertex_blend, get_info | Polygon mesh editing |
-| `navmesh` | create_agent, create_area, create_link, generate, get_status, query_path | Navigation mesh |
-| `cloud` | search, get_package, mount | Workshop asset store |
-| `project` | get_collision, set_collision_rule, get_input, get_info | Project settings |
-| `terrain` | create, configure, get_info, paint_material, sync | Terrain editing |
+19 omnibus tools, ~120 actions. Each tool takes a required `action` parameter.
+
+| Tool | Actions | Count |
+|------|---------|-------|
+| **scene** | summary, hierarchy, statistics, find, find_in_radius, get_details, prefab_instances | 7 |
+| **gameobject** | create, destroy, duplicate, reparent, rename, enable, set_tags, set_transform, batch_transform | 9 |
+| **component** | add, remove, set_property, set_enabled, get_properties, get_types, copy | 7 |
+| **compile** | trigger, status, errors, generate_solution, wait | 5 |
+| **prefab** | instantiate, get_structure, get_instances, break, update, create, save_overrides, revert, get_overrides | 9 |
+| **asset_query** | browse, search, open, get_dependencies, get_model_info, get_material_properties, get_mesh_info, get_bounds, get_unsaved, get_status, get_json, get_references | 12 |
+| **asset_manage** | create, delete, rename, move, save, reload, get_references | 7 |
+| **editor** | select, get/set_selected, clear/frame_selection, play controls, save, undo/redo, console, preferences | 18 |
+| **session** | list, set_active, load_scene | 3 |
+| **lighting** | create, configure, create_skybox, set_skybox | 4 |
+| **physics** | add_collider, configure_collider, add_rigidbody, create_model_physics, create_character_controller, create_joint | 6 |
+| **audio** | create, configure | 2 |
+| **effects** | create, configure_particle, configure_post_processing | 3 |
+| **camera** | create, configure | 2 |
+| **mesh** | create_block, create_clutter, set_face_material, set_texture_params, vertex ops, get_info | 8 |
+| **navmesh** | create_agent, create_area, create_link, generate, get_status, query_path | 6 |
+| **cloud** | search, get_package, mount | 3 |
+| **project** | get_collision, set_collision_rule, get_input, get_info | 4 |
+| **terrain** | create, configure, get_info, paint_material, sync | 5 |
 
 ## Architecture
 
-```
-AI Client --> HTTP/SSE --> ArenulaMcpServer (inside s&box editor)
-                            |
-                         RpcDispatcher
-                            |
-              +-------------+-------------+
-              |             |             |
-         async tools   console path   main thread
-        (compile,cloud) (exception    (all other
-         background      isolation)    scene tools)
-              |             |             |
-           Handler       Handler       Handler
-```
+28 C# source files — 8 core infrastructure, 20 per-tool handlers.
 
-- **19 handler files** — one per tool, in `Editor/Handlers/`
-- **8 core files** — transport, dispatch, schemas, helpers, in `Editor/Core/`
-- **Threading**: Scene APIs run on main thread via `GameTask.MainThread()`. Async tools (compile, cloud) dispatch on background thread to avoid deadlocks.
+![Architecture](architecture.png)
 
-## Design Principles
-
-Following [Anthropic's MCP tool design guidance](https://www.anthropic.com/engineering/writing-tools-for-agents):
-
-- **Omnibus tools** — related operations grouped with `action` enum, not separate tools
-- **Rich descriptions** — 3-4 sentences per tool with negative guidance ("use X instead")
-- **Trimmed responses** — canonical `{id, name}` tuples, pagination, 16K char truncation
-- **Actionable errors** — suggestions for recovery, similar type fuzzy matching
-- **`additionalProperties: false`** — prevents parameter hallucination
+Designed following [Anthropic's MCP best practices](https://www.anthropic.com/engineering/writing-tools-for-agents): omnibus tools with action enums, rich descriptions with negative guidance, trimmed responses, actionable errors, and `additionalProperties: false` on every schema.
 
 ## Attribution
 
-Based on [Ozmium MCP Server](https://github.com/ozmium7/ozmium-mcp-server-for-sbox) by ozmium7.
+- Editor based on [Ozmium MCP Server](https://github.com/ozmium7/ozmium-mcp-server-for-sbox) by ozmium7 (GPL-3.0)
+- API based on [sbox-api-mcp](https://github.com/sofianebel/sbox-api-mcp) by sofianebel (MIT)
+- Docs based on [sbox-docs-mcp](https://github.com/sofianebel/sbox-docs-mcp) by sofianebel (MIT)
 
 ## License
 
-GPL-3.0 — see [LICENSE](LICENSE).
+GPL-3.0 (Editor) · MIT (API, Docs)

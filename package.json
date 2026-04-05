@@ -1,0 +1,15 @@
+{
+  "name": "arenula-mcp",
+  "version": "1.0.0",
+  "private": true,
+  "description": "MCP server suite for the s&box game engine",
+  "scripts": {
+    "build": "npm run build --prefix api && npm run build --prefix docs",
+    "install-all": "npm install --prefix api && npm install --prefix docs",
+    "setup": "npm run install-all && npm run build"
+  },
+  "license": "GPL-3.0",
+  "devDependencies": {
+    "puppeteer": "^24.40.0"
+  }
+}

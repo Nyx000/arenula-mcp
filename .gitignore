@@ -3,3 +3,6 @@ dist/
 *.js.map
 .DS_Store
 Thumbs.db
+.env
+.env.local
+.mcp.json
