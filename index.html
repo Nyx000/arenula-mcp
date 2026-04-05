@@ -30,7 +30,7 @@
             font-size: 15px;
         }
 
-        .wrap { max-width: 1200px; margin: 0 auto; padding: 0 48px; }
+        .wrap { max-width: 960px; margin: 0 auto; padding: 0 40px; }
 
         /* ── Hero ─────────────────────────────────── */
         .hero {
@@ -247,39 +247,15 @@
 
         /* ── Print ────────────────────────────────── */
         @media print {
-            @page { size: A4 landscape; margin: 12mm 16mm; }
+            @page { size: A4; margin: 10mm 14mm; }
             body {
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
-                font-size: 13px;
             }
             .wrap { max-width: 100%; padding: 0; }
-            .hero { padding: 28px 0 20px; }
-            .hero h1 { font-size: 2.4rem; }
-            .hero-stats { gap: 40px; margin-top: 20px; }
-            .hero-stat .n { font-size: 1.6rem; }
-            hr.sep { margin: 0; }
-            .section { padding: 20px 0; }
-            .section h2 { font-size: 1.15rem; margin-bottom: 6px; }
-            .section > .wrap > p { margin-bottom: 14px; font-size: 0.85rem; }
-            .srv { padding: 16px; }
-            .srv h3 { font-size: 0.92rem; }
-            .srv p { font-size: 0.8rem; margin-bottom: 8px; }
-            .t { padding: 6px 12px; }
-            .t-name { font-size: 0.82rem; }
-            .t-acts { font-size: 0.72rem; }
-            .t-acts code { font-size: 0.68rem; padding: 0 4px; }
-            .arch-diagram { padding: 16px; font-size: 0.7rem; line-height: 1.6; }
-            .arch-item h4 { font-size: 0.8rem; }
-            .arch-item p { font-size: 0.75rem; }
-            .arch-item code { font-size: 0.68rem; }
-            .pr { padding: 12px; }
-            .pr h4 { font-size: 0.8rem; }
-            .pr p { font-size: 0.75rem; }
-            pre.code { padding: 12px 14px; font-size: 0.75rem; }
-            .install h3 { font-size: 0.85rem; margin-top: 14px; }
-            .footer { padding: 16px 0; font-size: 0.7rem; }
-            .t, .srv, .pr, .arch-diagram, .arch-grid, pre.code { break-inside: avoid; }
+            .arch-grid { grid-template-columns: 1fr; }
+            .arch-diagram { font-size: 0.72rem; line-height: 1.5; padding: 20px; }
+            .t, .srv, .pr, .arch-diagram, pre.code { break-inside: avoid; }
         }
 
         @media (max-width: 700px) {
