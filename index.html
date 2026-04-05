@@ -247,12 +247,12 @@
 
         /* ── Print ────────────────────────────────── */
         @media print {
-            @page { size: A4; margin: 10mm 14mm; }
+            @page { size: A4; margin: 0; }
             body {
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
             }
-            .wrap { max-width: 100%; padding: 0; }
+            .wrap { max-width: 100%; padding: 0 32px; }
             .arch-grid { grid-template-columns: 1fr; }
             .arch-diagram { font-size: 0.72rem; line-height: 1.5; padding: 20px; }
             .t, .srv, .pr, .arch-diagram, pre.code { break-inside: avoid; }
