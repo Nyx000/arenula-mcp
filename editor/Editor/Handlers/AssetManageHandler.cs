@@ -137,15 +137,10 @@ internal static class AssetManageHandler
 
         try
         {
-            // Move to recycle bin using shell API
-            // Fallback: just delete the file (System.IO does not have recycle bin support natively)
-            // In s&box editor context, we can use Editor.FileSystem if available
-            Microsoft.VisualBasic.FileIO.FileSystem.DeleteFile(
-                absPath,
-                Microsoft.VisualBasic.FileIO.UIOption.OnlyErrorDialogs,
-                Microsoft.VisualBasic.FileIO.RecycleOption.SendToRecycleBin );
+            // Delete the file (s&box sandbox doesn't have Microsoft.VisualBasic)
+            System.IO.File.Delete( absPath );
 
-            return HandlerBase.Confirm( $"Deleted '{path}' (sent to recycle bin)." );
+            return HandlerBase.Confirm( $"Deleted '{path}'." );
         }
         catch ( Exception )
         {

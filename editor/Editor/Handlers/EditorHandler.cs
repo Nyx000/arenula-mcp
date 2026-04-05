@@ -393,7 +393,7 @@ internal static class EditorHandler
                             var name = !string.IsNullOrEmpty( attr.Name ) ? attr.Name : prop.Name.ToLowerInvariant();
                             try
                             {
-                                var val = ConsoleSystem.GetValue( name );
+                                var val = Sandbox.ConsoleSystem.GetValue( name );
                                 prefs[name] = val;
                             }
                             catch { }
@@ -428,15 +428,15 @@ internal static class EditorHandler
 
         // Verify the convar exists
         string current = null;
-        try { current = ConsoleSystem.GetValue( key ); } catch { }
+        try { current = Sandbox.ConsoleSystem.GetValue( key ); } catch { }
 
         if ( current == null )
             return HandlerBase.Error( $"Unknown preference key '{key}'. Use get_preferences to list available keys.", "set_preference" );
 
-        ConsoleSystem.SetValue( key, value );
+        Sandbox.ConsoleSystem.SetValue( key, value );
 
         string readback = null;
-        try { readback = ConsoleSystem.GetValue( key ); } catch { }
+        try { readback = Sandbox.ConsoleSystem.GetValue( key ); } catch { }
 
         return HandlerBase.Success( new
         {

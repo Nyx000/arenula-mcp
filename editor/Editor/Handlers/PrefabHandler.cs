@@ -232,7 +232,7 @@ internal static class PrefabHandler
         {
             // Try writing via the asset system's base path
             var projectDir = System.IO.Path.GetDirectoryName(
-                Editor.EditorUtility.Projects.Active?.GetAssemblyPath() ?? "" );
+                Editor.EditorUtility.Projects.GetAll()?.FirstOrDefault()?.GetRootPath() ?? "" );
 
             // Fallback: use the asset system to find base path
             // Write relative to project root
