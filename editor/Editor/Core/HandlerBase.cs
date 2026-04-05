@@ -37,6 +37,20 @@ internal static class HandlerBase
         return Text( json );
     }
 
+    // ── Image responses ─────────────────────────────────────────────────
+
+    /// <summary>Return a base64-encoded image as an MCP image content block, with optional caption.</summary>
+    internal static object Image( byte[] imageData, string mimeType = "image/jpeg", string caption = null )
+    {
+        var content = new List<object>
+        {
+            new { type = "image", data = Convert.ToBase64String( imageData ), mimeType }
+        };
+        if ( caption != null )
+            content.Add( new { type = "text", text = caption } );
+        return new { content };
+    }
+
     // ── Error responses ────────────────────────────────────────────────
 
     /// <summary>Return a tool execution error with action context and suggestion.</summary>

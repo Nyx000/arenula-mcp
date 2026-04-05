@@ -371,19 +371,23 @@ internal static class ToolRegistry
     internal static readonly object Camera = new
     {
         name = "camera",
-        description = "Create and configure camera components in the scene. Use 'create' to add a new camera at a position, 'configure' to adjust field of view, near/far clipping planes, and render settings. Every playable scene needs at least one camera. For runtime camera control (following players, etc.), write a C# component — this tool places and configures the camera GameObject in the scene.",
+        description = "Create and configure camera components, or capture a screenshot of the scene. Use 'capture_viewport' with 'position' and 'look_at' to render from any viewpoint aimed at a target — this is the easiest way to frame a shot. 'rotation' is available as an alternative to 'look_at' for manual control. Without position, captures from the scene's default camera.",
         inputSchema = new
         {
             type = "object",
             properties = new Dictionary<string, object>
             {
-                ["action"] = new { type = "string", description = "The operation to perform.", @enum = new[] { "create", "configure" } },
+                ["action"] = new { type = "string", description = "The operation to perform.", @enum = new[] { "create", "configure", "capture_viewport" } },
                 ["id"] = new { type = "string", description = "Camera GameObject GUID. Required for: configure." },
-                ["position"] = new { type = "string", description = "Position as 'x,y,z'. Used by: create." },
-                ["rotation"] = new { type = "string", description = "Rotation as 'pitch,yaw,roll'. Used by: create." },
-                ["fov"] = new { type = "number", description = "Field of view in degrees. Used by: configure." },
+                ["position"] = new { type = "string", description = "Position as 'x,y,z'. Used by: create, capture_viewport." },
+                ["rotation"] = new { type = "string", description = "Rotation as 'pitch,yaw,roll'. Used by: create, capture_viewport. Ignored if look_at is set." },
+                ["look_at"] = new { type = "string", description = "Target position as 'x,y,z' to aim the camera at. Used by: capture_viewport. Takes priority over rotation." },
+                ["fov"] = new { type = "number", description = "Field of view in degrees. Used by: configure, capture_viewport. Default 90 for capture." },
                 ["near_clip"] = new { type = "number", description = "Near clipping plane distance. Used by: configure." },
-                ["far_clip"] = new { type = "number", description = "Far clipping plane distance. Used by: configure." }
+                ["far_clip"] = new { type = "number", description = "Far clipping plane distance. Used by: configure." },
+                ["width"] = new { type = "integer", description = "Capture width in pixels (320-3840). Default 1280. Used by: capture_viewport." },
+                ["height"] = new { type = "integer", description = "Capture height in pixels (240-2160). Default 720. Used by: capture_viewport." },
+                ["quality"] = new { type = "integer", description = "JPEG quality 10-100. Default 75. Used by: capture_viewport." }
             },
             required = new[] { "action" },
             additionalProperties = false

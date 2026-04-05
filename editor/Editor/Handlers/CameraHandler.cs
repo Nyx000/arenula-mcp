@@ -20,10 +20,11 @@ internal static class CameraHandler
         {
             return action switch
             {
-                "create"    => Create( args ),
-                "configure" => Configure( args ),
+                "create"           => Create( args ),
+                "configure"        => Configure( args ),
+                "capture_viewport" => CaptureViewport( args ),
                 _ => HandlerBase.Error( $"Unknown action '{action}'", action,
-                    "Valid actions: create, configure" )
+                    "Valid actions: create, configure, capture_viewport" )
             };
         }
         catch ( Exception ex )
@@ -88,6 +89,95 @@ internal static class CameraHandler
             position = HandlerBase.V3( go.WorldPosition ),
             fov = cam.FieldOfView
         } );
+    }
+
+    // ── capture_viewport ────────────────────────────────────────────────
+
+    private static object CaptureViewport( JsonElement args )
+    {
+        var scene = SceneHelpers.ResolveScene();
+        if ( scene == null )
+            return HandlerBase.Error( "No active scene.", "capture_viewport" );
+
+        var width = HandlerBase.GetInt( args, "width", 1280 );
+        var height = HandlerBase.GetInt( args, "height", 720 );
+        var quality = HandlerBase.GetInt( args, "quality", 75 );
+
+        width = Math.Clamp( width, 320, 3840 );
+        height = Math.Clamp( height, 240, 2160 );
+        quality = Math.Clamp( quality, 10, 100 );
+
+        var posStr = HandlerBase.GetString( args, "position" );
+        var rotStr = HandlerBase.GetString( args, "rotation" );
+        var lookAtStr = HandlerBase.GetString( args, "look_at" );
+
+        var pixmap = new Pixmap( width, height );
+
+        // If position/rotation/look_at specified, move the scene camera temporarily
+        if ( posStr != null || rotStr != null || lookAtStr != null )
+        {
+            var camComp = scene.GetAllComponents<CameraComponent>()
+                .FirstOrDefault( c => c.IsMainCamera && c.Enabled );
+            if ( camComp == null )
+                camComp = scene.GetAllComponents<CameraComponent>().FirstOrDefault( c => c.Enabled );
+            if ( camComp == null )
+                return HandlerBase.Error( "No CameraComponent found in scene.", "capture_viewport" );
+
+            var go = camComp.GameObject;
+
+            // Save original transform
+            var origPos = go.WorldPosition;
+            var origRot = go.WorldRotation;
+            var origFov = camComp.FieldOfView;
+
+            // Move to requested viewpoint
+            if ( posStr != null )
+                go.WorldPosition = HandlerBase.ParseVector3( posStr );
+
+            // look_at takes priority over rotation — compute pitch/yaw from position to target
+            if ( lookAtStr != null )
+            {
+                var target = HandlerBase.ParseVector3( lookAtStr );
+                var dir = ( target - go.WorldPosition );
+                var horiz = new Vector2( dir.x, dir.y );
+                var yaw = MathF.Atan2( horiz.y, horiz.x ) * ( 180f / MathF.PI );
+                var dist = horiz.Length;
+                var pitch = MathF.Atan2( -dir.z, dist ) * ( 180f / MathF.PI );
+                go.WorldRotation = Rotation.From( pitch, yaw, 0f );
+            }
+            else if ( rotStr != null )
+            {
+                var r = HandlerBase.ParseVector3( rotStr );
+                go.WorldRotation = Rotation.From( r.x, r.y, r.z );
+            }
+
+            camComp.FieldOfView = HandlerBase.GetFloat( args, "fov", 90f );
+
+            var ok = camComp.RenderToPixmap( pixmap );
+
+            // Restore original transform
+            go.WorldPosition = origPos;
+            go.WorldRotation = origRot;
+            camComp.FieldOfView = origFov;
+
+            if ( !ok )
+                return HandlerBase.Error( "RenderToPixmap failed.", "capture_viewport" );
+        }
+        else
+        {
+            if ( !scene.RenderToPixmap( pixmap ) )
+                return HandlerBase.Error( "RenderToPixmap failed — scene may not be ready.", "capture_viewport" );
+        }
+
+        var bytes = pixmap.GetJpeg( quality );
+        if ( bytes == null || bytes.Length == 0 )
+            return HandlerBase.Error( "Failed to encode viewport image.", "capture_viewport" );
+
+        var caption = $"Viewport capture {width}x{height} ({bytes.Length / 1024}KB)";
+        if ( posStr != null )
+            caption += $" from {posStr}";
+
+        return HandlerBase.Image( bytes, "image/jpeg", caption );
     }
 
     // ── configure ─────────────────────────────────────────────────────
