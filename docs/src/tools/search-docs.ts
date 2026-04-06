@@ -4,7 +4,12 @@ import { ensureInitialized, search } from '../lib/search-index.js'
 
 export async function searchDocs(params: SearchDocsParams): Promise<string> {
   // Lazy-initialize the search index on first query
-  await ensureInitialized(fetchPage)
+  try {
+    await ensureInitialized(fetchPage)
+  } catch (err) {
+    console.error('[arenula-docs] Search index initialization failed:', err)
+    // Continue with whatever was indexed — partial results are better than none
+  }
 
   const results = search(params.query, params.limit)
 
