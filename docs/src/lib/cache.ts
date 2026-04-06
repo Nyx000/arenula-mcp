@@ -20,6 +20,9 @@ export class Cache<T> {
       this.store.delete(key)
       return undefined
     }
+    // Refresh insertion order for LRU — delete and re-insert
+    this.store.delete(key)
+    this.store.set(key, entry)
     return entry.value
   }
 
