@@ -251,6 +251,11 @@ internal static class PrefabHandler
             // writes the prefab to disk, and sets the prefab source on the GO.
             EditorUtility.Prefabs.ConvertGameObjectToPrefab( go, absPath );
 
+            // Break the prefab instance link so the source GO remains freely editable.
+            // The prefab file is already saved — this just disconnects the scene object.
+            if ( go.IsPrefabInstance )
+                go.BreakFromPrefab();
+
             return HandlerBase.Success( new
             {
                 message = $"Created prefab from '{go.Name}'.",
