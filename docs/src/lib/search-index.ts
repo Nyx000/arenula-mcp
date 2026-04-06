@@ -70,7 +70,7 @@ export async function ensureInitialized(fetcher: (url: string) => Promise<{ titl
   )
 
   const succeeded = results.filter(r => r.status === 'fulfilled').length
-  console.error(`[sbox-docs-mcp] Indexed ${succeeded}/${SEED_URLS.length} documentation pages`)
+  console.error(`[arenula-docs] Indexed ${succeeded}/${SEED_URLS.length} documentation pages`)
 }
 
 export function search(query: string, limit = 10): SearchResult[] {

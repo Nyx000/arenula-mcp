@@ -13,7 +13,7 @@ import { registerSearchPackages } from './tools/search-packages.js'
 import { registerGetPackage } from './tools/get-package.js'
 
 async function main() {
-  console.error('[sbox-api] Starting S&box API MCP Server...')
+  console.error('[arenula-api] Starting S&box API MCP Server...')
 
   // Load API data
   const data = await loadApiData()
@@ -40,10 +40,10 @@ async function main() {
   // Connect via stdio
   const transport = new StdioServerTransport()
   await server.connect(transport)
-  console.error('[sbox-api] Server running on stdio')
+  console.error('[arenula-api] Server running on stdio')
 }
 
 main().catch(err => {
-  console.error('[sbox-api] Fatal error:', err)
+  console.error('[arenula-api] Fatal error:', err)
   process.exit(1)
 })

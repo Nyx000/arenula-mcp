@@ -12,6 +12,13 @@
     "dev": "tsc --watch",
     "start": "node dist/index.js"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Nyx000/arenula-mcp.git",
+    "directory": "docs"
+  },
+  "homepage": "https://github.com/Nyx000/arenula-mcp",
+  "author": "Nyx000",
   "keywords": [
     "mcp",
     "arenula",

@@ -3,7 +3,7 @@ import { join } from 'node:path'
 import { homedir } from 'node:os'
 import type { SboxApiData, CacheConfig } from '../types.js'
 
-const CACHE_DIR = process.env.SBOX_CACHE_DIR || join(homedir(), '.sbox-api-mcp')
+const CACHE_DIR = process.env.SBOX_CACHE_DIR || join(homedir(), '.arenula-api')
 const CONFIG_PATH = join(CACHE_DIR, 'config.json')
 const DATA_PATH = join(CACHE_DIR, 'api-data.json')
 
@@ -34,15 +34,15 @@ async function downloadApi(url: string, currentEtag?: string): Promise<{ data: s
       const headRes = await fetch(url, { method: 'HEAD' })
       const remoteEtag = headRes.headers.get('etag')
       if (remoteEtag && remoteEtag === currentEtag) {
-        console.error('[sbox-api] Cache is up to date (ETag match)')
+        console.error('[arenula-api] Cache is up to date (ETag match)')
         return null // No update needed
       }
     } catch {
-      console.error('[sbox-api] HEAD request failed, will try full download')
+      console.error('[arenula-api] HEAD request failed, will try full download')
     }
   }
 
-  console.error(`[sbox-api] Downloading API data from ${url}...`)
+  console.error(`[arenula-api] Downloading API data from ${url}...`)
   const res = await fetch(url)
   if (!res.ok) {
     throw new Error(`Failed to download: ${res.status} ${res.statusText}`)
@@ -50,7 +50,7 @@ async function downloadApi(url: string, currentEtag?: string): Promise<{ data: s
 
   const data = await res.text()
   const etag = res.headers.get('etag') || undefined
-  console.error(`[sbox-api] Downloaded ${(data.length / 1024 / 1024).toFixed(1)} MB`)
+  console.error(`[arenula-api] Downloaded ${(data.length / 1024 / 1024).toFixed(1)} MB`)
   return { data, etag }
 }
 
@@ -73,24 +73,24 @@ export async function loadApiData(): Promise<SboxApiData> {
         lastFetched: new Date().toISOString(),
       })
       const parsed: SboxApiData = JSON.parse(result.data)
-      console.error(`[sbox-api] Loaded ${parsed.Types.length} types`)
+      console.error(`[arenula-api] Loaded ${parsed.Types.length} types`)
       return parsed
     }
   } catch (err) {
-    console.error(`[sbox-api] Download error: ${err}`)
+    console.error(`[arenula-api] Download error: ${err}`)
   }
 
   // Use cached data
   if (hasCachedData) {
-    console.error('[sbox-api] Using cached data')
+    console.error('[arenula-api] Using cached data')
     const raw = readFileSync(DATA_PATH, 'utf-8')
     const parsed: SboxApiData = JSON.parse(raw)
-    console.error(`[sbox-api] Loaded ${parsed.Types.length} types from cache`)
+    console.error(`[arenula-api] Loaded ${parsed.Types.length} types from cache`)
     return parsed
   }
 
   throw new Error(
-    '[sbox-api] No cached data and download failed. Please check your network or provide the URL manually.'
+    '[arenula-api] No cached data and download failed. Please check your network or provide the URL manually.'
   )
 }
 
@@ -110,6 +110,6 @@ export async function updateApiSource(newUrl: string): Promise<SboxApiData> {
   })
 
   const parsed: SboxApiData = JSON.parse(result.data)
-  console.error(`[sbox-api] Updated to new source: ${parsed.Types.length} types`)
+  console.error(`[arenula-api] Updated to new source: ${parsed.Types.length} types`)
   return parsed
 }

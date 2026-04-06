@@ -72,7 +72,7 @@ function flattenMembers(types: SboxType[]): FlatMember[] {
 
 export function buildIndexes(data: SboxApiData): SearchIndexes {
   const types = data.Types
-  console.error(`[sbox-api] Building indexes for ${types.length} types...`)
+  console.error(`[arenula-api] Building indexes for ${types.length} types...`)
 
   // Type fuzzy search
   const typeFuse = new Fuse(types, {
@@ -108,7 +108,7 @@ export function buildIndexes(data: SboxApiData): SearchIndexes {
 
   // Flatten all members
   const members = flattenMembers(types)
-  console.error(`[sbox-api] Indexed ${members.length} members`)
+  console.error(`[arenula-api] Indexed ${members.length} members`)
 
   const memberFuse = new Fuse(members, {
     keys: [
@@ -164,8 +164,8 @@ export function buildIndexes(data: SboxApiData): SearchIndexes {
     minMatchCharLength: 3,
   })
 
-  console.error(`[sbox-api] Doc index: ${docEntries.length} entries`)
-  console.error('[sbox-api] Indexes ready')
+  console.error(`[arenula-api] Doc index: ${docEntries.length} entries`)
+  console.error('[arenula-api] Indexes ready')
 
   return { types, typeFuse, typeLookup, members, memberFuse, namespaceMap, docFuse }
 }

@@ -2,7 +2,7 @@
 
 Fetches narrative s&box documentation from docs.facepunch.com for AI coding assistants. Scrapes HTML, converts to Markdown, caches with LRU.
 
-Part of the [Arenula MCP suite](../README.md). Based on [sbox-docs-mcp](https://github.com/Nyx000/sbox-docs-mcp) (MIT).
+Part of the [Arenula MCP suite](../README.md). Based on [sbox-docs-mcp](https://github.com/sofianebel/sbox-docs-mcp) by sofianebel (MIT).
 
 ## Install & Run
 

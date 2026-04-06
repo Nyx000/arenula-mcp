@@ -22,7 +22,7 @@ export async function getApiType(params: GetApiTypeParams): Promise<string> {
       return JSON.stringify({
         type_name,
         error: err instanceof Error ? err.message : String(err),
-        hint: 'Use sbox-api-mcp search_types/get_type tools for structured API data. This tool fetches narrative docs only.',
+        hint: 'Use arenula-api search_types/get_type tools for structured API data. This tool fetches narrative docs only.',
       })
     }
   }

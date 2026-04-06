@@ -7,7 +7,7 @@ const turndown = new TurndownService({
 })
 
 const TIMEOUT = parseInt(process.env.SBOX_DOCS_REQUEST_TIMEOUT || '10000')
-const USER_AGENT = process.env.SBOX_DOCS_USER_AGENT || 'sbox-docs-mcp/0.1.0'
+const USER_AGENT = process.env.SBOX_DOCS_USER_AGENT || 'arenula-docs/1.0.0'
 
 export interface FetchResult {
   markdown: string
@@ -60,7 +60,7 @@ export async function fetchApiType(typeName: string): Promise<FetchResult> {
     // Fallback: try searching the docs
     throw new Error(
       `Could not fetch API docs for '${typeName}'. ` +
-      `Use sbox-api-mcp's get_type tool for structured API data instead.`
+      `Use arenula-api's get_type tool for structured API data instead.`
     )
   }
 }
