@@ -25,20 +25,30 @@ const index = new MiniSearch<DocEntry>({
 
 let initialized = false
 
-// Known documentation page URLs to seed the index
+// Key documentation pages to seed the search index
 const SEED_URLS = [
-  { url: 'https://docs.facepunch.com/s/sbox-dev/doc/components-hPnGbp7gHp', title: 'Components' },
-  { url: 'https://docs.facepunch.com/s/sbox-dev/doc/game-objects-F7GKMBSH4q', title: 'Game Objects' },
-  { url: 'https://docs.facepunch.com/s/sbox-dev/doc/scenes-gg4qKYgR3G', title: 'Scenes' },
-  { url: 'https://docs.facepunch.com/s/sbox-dev/doc/networking-yrvYEwC7CP', title: 'Networking' },
-  { url: 'https://docs.facepunch.com/s/sbox-dev/doc/ui-basics-vMbXBjK8T1', title: 'UI Basics' },
-  { url: 'https://docs.facepunch.com/s/sbox-dev/doc/tracing-raycasting-hmmUGHmTOR', title: 'Tracing / Raycasting' },
+  { url: 'https://docs.facepunch.com/s/sbox-dev/doc/about-QGgSEpJhxe', title: 'About' },
+  { url: 'https://docs.facepunch.com/s/sbox-dev/doc/first-steps-7IyiSplYmn', title: 'First Steps' },
+  { url: 'https://docs.facepunch.com/s/sbox-dev/doc/code-basics-3W3PHk1tD3', title: 'Code Basics' },
+  { url: 'https://docs.facepunch.com/s/sbox-dev/doc/cheat-sheet-CH6MPz8N2j', title: 'Cheat Sheet' },
+  { url: 'https://docs.facepunch.com/s/sbox-dev/doc/scenes-LT2kjsMBy4', title: 'Scenes' },
+  { url: 'https://docs.facepunch.com/s/sbox-dev/doc/gameobject-oUVQQzT4IO', title: 'GameObject' },
+  { url: 'https://docs.facepunch.com/s/sbox-dev/doc/components-zIujvXKpIl', title: 'Components' },
+  { url: 'https://docs.facepunch.com/s/sbox-dev/doc/component-methods-OCvoNh8ByW', title: 'Component Methods' },
+  { url: 'https://docs.facepunch.com/s/sbox-dev/doc/prefabs-Tiq5GBWmm3', title: 'Prefabs' },
+  { url: 'https://docs.facepunch.com/s/sbox-dev/doc/networking-multiplayer-kaVboe3yRD', title: 'Networking & Multiplayer' },
+  { url: 'https://docs.facepunch.com/s/sbox-dev/doc/input-Hhi5KoJOnF', title: 'Input' },
   { url: 'https://docs.facepunch.com/s/sbox-dev/doc/navigation-vwoSUsEPJ9', title: 'Navigation' },
-  { url: 'https://docs.facepunch.com/s/sbox-dev/doc/input-system-gMsPxPJc2z', title: 'Input System' },
-  { url: 'https://docs.facepunch.com/s/sbox-dev/doc/sounds-music-6nPGaJyR8L', title: 'Sounds & Music' },
-  { url: 'https://docs.facepunch.com/s/sbox-dev/doc/game-resources-Rf7k5fxS7e', title: 'Game Resources' },
-  { url: 'https://docs.facepunch.com/s/sbox-dev/doc/terrain-UPxNq5rmfq', title: 'Terrain' },
-  { url: 'https://docs.facepunch.com/s/sbox-dev/doc/physics-bodies-PKlBk3m2oL', title: 'Physics Bodies' },
+  { url: 'https://docs.facepunch.com/s/sbox-dev/doc/tracing-FI4tuMSbSF', title: 'Tracing' },
+  { url: 'https://docs.facepunch.com/s/sbox-dev/doc/terrain-RoH8crPRmG', title: 'Terrain' },
+  { url: 'https://docs.facepunch.com/s/sbox-dev/doc/ui-kM9biZcQrj', title: 'UI' },
+  { url: 'https://docs.facepunch.com/s/sbox-dev/doc/player-controller-G9xW4n1yAS', title: 'Player Controller' },
+  { url: 'https://docs.facepunch.com/s/sbox-dev/doc/assetsresources-vfClHodkqi', title: 'Assets & Resources' },
+  { url: 'https://docs.facepunch.com/s/sbox-dev/doc/particle-effect-Ah4PenyGKk', title: 'Particle Effects' },
+  { url: 'https://docs.facepunch.com/s/sbox-dev/doc/shader-graph-O1KJlOQ8Pe', title: 'Shader Graph' },
+  { url: 'https://docs.facepunch.com/s/sbox-dev/doc/post-processing-oRlAHNS6bK', title: 'Post Processing' },
+  { url: 'https://docs.facepunch.com/s/sbox-dev/doc/razor-panels-dMbfl4Sqlw', title: 'Razor Panels' },
+  { url: 'https://docs.facepunch.com/s/sbox-dev/doc/file-system-0LoS75PRwn', title: 'File System' },
 ]
 
 export function addDocument(entry: DocEntry): void {

@@ -56,15 +56,27 @@ export async function fetchPage(url: string): Promise<FetchResult> {
 }
 
 export async function fetchApiType(typeName: string): Promise<FetchResult> {
-  // s&box API docs are at docs.facepunch.com — try the API reference page
-  const url = `https://docs.facepunch.com/s/sbox-dev/doc/api/${encodeURIComponent(typeName)}`
+  // Facepunch docs URLs include a hash suffix (e.g., gameobject-oUVQQzT4IO).
+  // Look up the correct URL from the sitemap.
+  const slug = typeName.toLowerCase().replace(/[^a-z0-9]+/g, '-')
   try {
-    return await fetchPage(url)
+    const sitemapRes = await fetch('https://docs.facepunch.com/api/shares.sitemap?id=sbox-dev', {
+      headers: { 'User-Agent': USER_AGENT },
+      signal: AbortSignal.timeout(TIMEOUT),
+    })
+    const xml = await sitemapRes.text()
+    const pattern = new RegExp(`https://docs\\.facepunch\\.com/s/sbox-dev/doc/${slug}-[A-Za-z0-9]+`)
+    const match = xml.match(pattern)
+    if (match) {
+      return await fetchPage(match[0])
+    }
   } catch {
-    // Fallback: try searching the docs
-    throw new Error(
-      `Could not fetch API docs for '${typeName}'. ` +
-      `Use arenula-api's get_type tool for structured API data instead.`
-    )
+    // Sitemap lookup failed — fall through to error
   }
+
+  throw new Error(
+    `No docs page found for '${typeName}'. ` +
+    `Try sbox_docs_search to find the relevant page, ` +
+    `or use arenula-api's get_type tool for structured API data.`
+  )
 }
