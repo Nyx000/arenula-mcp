@@ -167,8 +167,8 @@ internal static class TerrainHandler
         var terrainPos = terrain.GameObject.WorldPosition;
         var terrainSize = terrain.TerrainSize;
 
-        var localX = ( worldPos.x - terrainPos.x ) / terrainSize + 0.5f;
-        var localY = ( worldPos.y - terrainPos.y ) / terrainSize + 0.5f;
+        var localX = ( worldPos.x - terrainPos.x ) / terrainSize;
+        var localY = ( worldPos.y - terrainPos.y ) / terrainSize;
 
         if ( localX < 0 || localX > 1 || localY < 0 || localY > 1 )
             return HandlerBase.Error( "Position is outside terrain bounds.", "get_height" );
@@ -426,8 +426,8 @@ internal static class TerrainHandler
         var terrainSize = terrain.TerrainSize;
         var terrainPos = terrain.GameObject.WorldPosition;
 
-        var localX = ( worldPos.x - terrainPos.x ) / terrainSize + 0.5f;
-        var localY = ( worldPos.y - terrainPos.y ) / terrainSize + 0.5f;
+        var localX = ( worldPos.x - terrainPos.x ) / terrainSize;
+        var localY = ( worldPos.y - terrainPos.y ) / terrainSize;
         var texelCX = (int)( localX * res );
         var texelCY = (int)( localY * res );
         var texelRadius = Math.Max( 1, (int)( radius / terrainSize * res ) );
@@ -554,8 +554,8 @@ internal static class TerrainHandler
                 var wx = startX + sx * step;
                 var wy = startY + sy * step;
 
-                var lx = ( wx - terrainPos.x ) / terrainSize + 0.5f;
-                var ly = ( wy - terrainPos.y ) / terrainSize + 0.5f;
+                var lx = ( wx - terrainPos.x ) / terrainSize;
+                var ly = ( wy - terrainPos.y ) / terrainSize;
 
                 float h = 0;
                 if ( lx >= 0 && lx <= 1 && ly >= 0 && ly <= 1 )
@@ -615,8 +615,8 @@ internal static class TerrainHandler
         var terrainPos = terrain.GameObject.WorldPosition;
         var terrainSize = terrain.TerrainSize;
 
-        var localX = ( worldPos.x - terrainPos.x ) / terrainSize + 0.5f;
-        var localY = ( worldPos.y - terrainPos.y ) / terrainSize + 0.5f;
+        var localX = ( worldPos.x - terrainPos.x ) / terrainSize;
+        var localY = ( worldPos.y - terrainPos.y ) / terrainSize;
         var texelX = (int)( localX * res );
         var texelY = (int)( localY * res );
         var texelRadius = Math.Max( 1, (int)( radius / terrainSize * res ) );
@@ -710,8 +710,8 @@ internal static class TerrainHandler
         var terrainPos = terrain.GameObject.WorldPosition;
         var terrainSize = terrain.TerrainSize;
 
-        var localX = ( worldPos.x - terrainPos.x ) / terrainSize + 0.5f;
-        var localY = ( worldPos.y - terrainPos.y ) / terrainSize + 0.5f;
+        var localX = ( worldPos.x - terrainPos.x ) / terrainSize;
+        var localY = ( worldPos.y - terrainPos.y ) / terrainSize;
         var texelX = (int)( localX * res );
         var texelY = (int)( localY * res );
         var texelRadius = Math.Max( 1, (int)( radius / terrainSize * res ) );
@@ -998,8 +998,8 @@ internal static class TerrainHandler
         var worldPos = HandlerBase.ParseVector3( posStr );
 
         // Convert world position to texel coordinates
-        var localX = ( worldPos.x - terrainPos.x ) / terrainSize + 0.5f;
-        var localY = ( worldPos.y - terrainPos.y ) / terrainSize + 0.5f;
+        var localX = ( worldPos.x - terrainPos.x ) / terrainSize;
+        var localY = ( worldPos.y - terrainPos.y ) / terrainSize;
 
         var texelX = (int)( localX * res );
         var texelY = (int)( localY * res );
@@ -1156,8 +1156,8 @@ internal static class TerrainHandler
         var terrainPos = terrain.GameObject.WorldPosition;
         var terrainSize = terrain.TerrainSize;
 
-        var localX = (worldPos.x - terrainPos.x) / terrainSize + 0.5f;
-        var localY = (worldPos.y - terrainPos.y) / terrainSize + 0.5f;
+        var localX = (worldPos.x - terrainPos.x) / terrainSize;
+        var localY = (worldPos.y - terrainPos.y) / terrainSize;
 
         // Convert to texel coordinates
         var texelX = (int)(localX * res);

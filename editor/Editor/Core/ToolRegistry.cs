@@ -500,7 +500,7 @@ internal static class ToolRegistry
                 ["size"] = new { type = "number", description = "Terrain world size. Used by: create." },
                 ["height"] = new { type = "number", description = "Height value. create: max height. set_height: target or delta height in world units." },
                 ["resolution"] = new { type = "integer", description = "Heightmap resolution. Used by: create." },
-                ["position"] = new { type = "string", description = "World position 'x,y,z'. Required for: get_height, set_height, get_material_at, set_hole, paint_material." },
+                ["position"] = new { type = "string", description = "s&box world position 'x,y,z'. Terrain occupies [terrainPos, terrainPos+size] in X and Y. Use get_info to find terrain position and size. Required for: get_height, set_height, get_material_at, set_hole, paint_material, stamp, get_height_region, blend_materials." },
                 ["material"] = new { type = "string", description = "Terrain material name. Required for: paint_material." },
                 ["material_path"] = new { type = "string", description = ".terrain_material asset path. Used by: add_material, remove_material." },
                 ["material_index"] = new { type = "integer", description = "Material index. Used by: remove_material." },
