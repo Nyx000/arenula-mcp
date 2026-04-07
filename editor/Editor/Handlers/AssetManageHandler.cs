@@ -62,29 +62,9 @@ internal static class AssetManageHandler
         try
         {
             // Resolve the absolute path
-            // Use AssetSystem to find the project root by checking any existing asset
-            var anyAsset = AssetSystem.All.FirstOrDefault();
-            if ( anyAsset == null )
-                return HandlerBase.Error( "No assets found in project — cannot determine project root.", "create" );
-
-            // Build absolute path from project root
-            var projectRoot = System.IO.Path.GetDirectoryName( anyAsset.AbsolutePath );
-            // Walk up to find the actual root (the directory containing the Assets folder)
-            while ( !string.IsNullOrEmpty( projectRoot ) )
-            {
-                var relativePart = anyAsset.Path;
-                if ( anyAsset.AbsolutePath.EndsWith( relativePart.Replace( '/', System.IO.Path.DirectorySeparatorChar ) ) )
-                {
-                    projectRoot = anyAsset.AbsolutePath[..^relativePart.Length].TrimEnd( System.IO.Path.DirectorySeparatorChar, '/' );
-                    break;
-                }
-                projectRoot = System.IO.Path.GetDirectoryName( projectRoot );
-            }
-
-            if ( string.IsNullOrEmpty( projectRoot ) )
+            var absPath = HandlerBase.ResolveProjectPath( path );
+            if ( absPath == null )
                 return HandlerBase.Error( "Could not determine project root directory.", "create" );
-
-            var absPath = System.IO.Path.Combine( projectRoot, path.Replace( '/', System.IO.Path.DirectorySeparatorChar ) );
             var dir = System.IO.Path.GetDirectoryName( absPath );
             if ( !string.IsNullOrEmpty( dir ) && !System.IO.Directory.Exists( dir ) )
                 System.IO.Directory.CreateDirectory( dir );
@@ -100,10 +80,8 @@ internal static class AssetManageHandler
 
             System.IO.File.WriteAllText( absPath, content );
 
-            // Trigger asset compile to register with AssetSystem
-            var asset = AssetSystem.FindByPath( path );
-            if ( asset != null )
-                asset.Compile( true );
+            // Immediately register the new file with the asset system
+            AssetSystem.RegisterFile( absPath );
 
             return HandlerBase.Success( new
             {
@@ -128,16 +106,17 @@ internal static class AssetManageHandler
             return HandlerBase.Error( "Missing required 'path' parameter.", "delete" );
 
         var asset = AssetSystem.FindByPath( path );
-        if ( asset == null )
-            return HandlerBase.Error( $"Asset not found: '{path}'.", "delete" );
+        var absPath = asset?.AbsolutePath;
 
-        var absPath = asset.AbsolutePath;
+        // Fallback: resolve from project root if asset system hasn't indexed yet
         if ( string.IsNullOrEmpty( absPath ) || !System.IO.File.Exists( absPath ) )
-            return HandlerBase.Error( $"Asset file not found on disk: '{path}'.", "delete" );
+            absPath = HandlerBase.ResolveProjectPath( path );
+
+        if ( string.IsNullOrEmpty( absPath ) || !System.IO.File.Exists( absPath ) )
+            return HandlerBase.Error( $"Asset file not found: '{path}'.", "delete" );
 
         try
         {
-            // Delete the file (s&box sandbox doesn't have Microsoft.VisualBasic)
             System.IO.File.Delete( absPath );
 
             return HandlerBase.Confirm( $"Deleted '{path}'." );
@@ -171,12 +150,14 @@ internal static class AssetManageHandler
             return HandlerBase.Error( "Missing required 'new_name' parameter.", "rename" );
 
         var asset = AssetSystem.FindByPath( path );
-        if ( asset == null )
-            return HandlerBase.Error( $"Asset not found: '{path}'.", "rename" );
+        var absPath = asset?.AbsolutePath;
 
-        var absPath = asset.AbsolutePath;
+        // Fallback: resolve from project root if asset system hasn't indexed yet
         if ( string.IsNullOrEmpty( absPath ) || !System.IO.File.Exists( absPath ) )
-            return HandlerBase.Error( $"Asset file not found on disk: '{path}'.", "rename" );
+            absPath = HandlerBase.ResolveProjectPath( path );
+
+        if ( string.IsNullOrEmpty( absPath ) || !System.IO.File.Exists( absPath ) )
+            return HandlerBase.Error( $"Asset file not found: '{path}'.", "rename" );
 
         try
         {
@@ -189,6 +170,9 @@ internal static class AssetManageHandler
 
             var newAbsPath = System.IO.Path.Combine( dir, newName );
             System.IO.File.Move( absPath, newAbsPath );
+
+            // Re-register the moved file with the asset system
+            AssetSystem.RegisterFile( newAbsPath );
 
             // Compute new relative path
             var parentDir = System.IO.Path.GetDirectoryName( path );
@@ -223,20 +207,23 @@ internal static class AssetManageHandler
             return HandlerBase.Error( "Missing required 'destination' parameter.", "move" );
 
         var asset = AssetSystem.FindByPath( path );
-        if ( asset == null )
-            return HandlerBase.Error( $"Asset not found: '{path}'.", "move" );
+        var absPath = asset?.AbsolutePath;
 
-        var absPath = asset.AbsolutePath;
+        // Fallback: resolve from project root if asset system hasn't indexed yet
         if ( string.IsNullOrEmpty( absPath ) || !System.IO.File.Exists( absPath ) )
-            return HandlerBase.Error( $"Asset file not found on disk: '{path}'.", "move" );
+            absPath = HandlerBase.ResolveProjectPath( path );
+
+        if ( string.IsNullOrEmpty( absPath ) || !System.IO.File.Exists( absPath ) )
+            return HandlerBase.Error( $"Asset file not found: '{path}'.", "move" );
 
         try
         {
             var fileName = System.IO.Path.GetFileName( absPath );
 
             // Resolve destination as relative to the project root
-            // Use the same root-finding logic as the source asset
-            var projectRoot = absPath[..^path.Replace( '/', System.IO.Path.DirectorySeparatorChar ).Length].TrimEnd( System.IO.Path.DirectorySeparatorChar );
+            var projectRoot = HandlerBase.GetProjectRoot();
+            if ( string.IsNullOrEmpty( projectRoot ) )
+                return HandlerBase.Error( "Could not determine project root directory.", "move" );
 
             var destAbsDir = System.IO.Path.Combine( projectRoot, destination.Replace( '/', System.IO.Path.DirectorySeparatorChar ) );
             if ( !System.IO.Directory.Exists( destAbsDir ) )
@@ -244,6 +231,9 @@ internal static class AssetManageHandler
 
             var destAbsPath = System.IO.Path.Combine( destAbsDir, fileName );
             System.IO.File.Move( absPath, destAbsPath );
+
+            // Re-register the moved file with the asset system
+            AssetSystem.RegisterFile( destAbsPath );
 
             var newRelPath = destination.TrimEnd( '/' ) + "/" + fileName;
 
@@ -295,6 +285,15 @@ internal static class AssetManageHandler
             return HandlerBase.Error( "Missing required 'path' parameter.", "reload" );
 
         var asset = AssetSystem.FindByPath( path );
+
+        // Fallback: try registering from disk if not yet indexed
+        if ( asset == null )
+        {
+            var absPath = HandlerBase.ResolveProjectPath( path );
+            if ( !string.IsNullOrEmpty( absPath ) && System.IO.File.Exists( absPath ) )
+                asset = AssetSystem.RegisterFile( absPath );
+        }
+
         if ( asset == null )
             return HandlerBase.Error( $"Asset not found: '{path}'.", "reload" );
 

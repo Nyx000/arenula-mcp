@@ -65,6 +65,15 @@ internal static class PrefabHandler
             : Rotation.Identity;
 
         var asset = AssetSystem.FindByPath( path );
+
+        // Fallback: try registering from disk if not yet indexed
+        if ( asset == null )
+        {
+            var absPath = HandlerBase.ResolveProjectPath( path );
+            if ( !string.IsNullOrEmpty( absPath ) && System.IO.File.Exists( absPath ) )
+                asset = AssetSystem.RegisterFile( absPath );
+        }
+
         if ( asset == null )
             return HandlerBase.Error( $"Asset not found: '{path}'. Use asset_query.search with type 'prefab' to find valid paths.", "instantiate" );
 
@@ -222,44 +231,32 @@ internal static class PrefabHandler
         try
         {
             // Resolve to absolute path if relative
-            var absPath = savePath;
-            if ( !System.IO.Path.IsPathRooted( absPath ) )
-            {
-                // Resolve project root from an existing asset's absolute path
-                var anyAsset = AssetSystem.All.FirstOrDefault();
-                if ( anyAsset == null )
-                    return HandlerBase.Error( "No assets found — cannot determine project root.", "create" );
+            var absPath = HandlerBase.ResolveProjectPath( savePath );
+            if ( absPath == null )
+                return HandlerBase.Error( "Could not determine project root directory.", "create" );
 
-                var projectRoot = "";
-                var relativePart = anyAsset.Path;
-                if ( anyAsset.AbsolutePath.EndsWith( relativePart.Replace( '/', System.IO.Path.DirectorySeparatorChar ) ) )
-                    projectRoot = anyAsset.AbsolutePath[..^relativePart.Length].TrimEnd( System.IO.Path.DirectorySeparatorChar, '/' );
-
-                if ( string.IsNullOrEmpty( projectRoot ) )
-                    return HandlerBase.Error( "Could not determine project root directory.", "create" );
-
-                absPath = System.IO.Path.Combine( projectRoot, savePath.Replace( '/', System.IO.Path.DirectorySeparatorChar ) );
-            }
-
-            // Ensure directory exists
+            // Ensure directory exists on disk
             var dir = System.IO.Path.GetDirectoryName( absPath );
             if ( !string.IsNullOrEmpty( dir ) && !System.IO.Directory.Exists( dir ) )
                 System.IO.Directory.CreateDirectory( dir );
 
-            // Use the engine's ConvertGameObjectToPrefab API.
-            // This handles all GameObject types including mesh blocks,
-            // writes the prefab to disk, and sets the prefab source on the GO.
-            EditorUtility.Prefabs.ConvertGameObjectToPrefab( go, absPath );
+            // Serialize the GameObject to JSON and write as a .prefab file.
+            var serialized = go.Serialize();
+            var prefabJson = new System.Text.Json.Nodes.JsonObject
+            {
+                ["RootObject"] = serialized
+            };
+            System.IO.File.WriteAllText( absPath, prefabJson.ToJsonString() );
 
-            // Break the prefab instance link so the source GO remains freely editable.
-            // The prefab file is already saved — this just disconnects the scene object.
-            if ( go.IsPrefabInstance )
-                go.BreakFromPrefab();
+            // Register and compile the new file with the asset system
+            AssetSystem.RegisterFile( absPath );
+            AssetSystem.CompileResource( savePath, System.IO.File.ReadAllText( absPath ) );
 
             return HandlerBase.Success( new
             {
                 message = $"Created prefab from '{go.Name}'.",
                 path = savePath,
+                absolutePath = absPath,
                 sourceId = go.Id.ToString()
             } );
         }

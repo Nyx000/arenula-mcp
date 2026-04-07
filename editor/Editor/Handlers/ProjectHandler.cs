@@ -61,10 +61,14 @@ internal static class ProjectHandler
     {
         var layerA = HandlerBase.GetString( args, "layer_a" );
         var layerB = HandlerBase.GetString( args, "layer_b" );
-        var collides = HandlerBase.GetString( args, "collides" );
 
-        if ( string.IsNullOrEmpty( layerA ) || string.IsNullOrEmpty( layerB ) || string.IsNullOrEmpty( collides ) )
-            return HandlerBase.Error( "Missing required 'layer_a', 'layer_b', and 'collides' parameters.", "set_collision_rule" );
+        if ( string.IsNullOrEmpty( layerA ) || string.IsNullOrEmpty( layerB ) )
+            return HandlerBase.Error( "Missing required 'layer_a' and 'layer_b' parameters.", "set_collision_rule" );
+
+        if ( args.ValueKind == JsonValueKind.Undefined || !args.TryGetProperty( "collides", out _ ) )
+            return HandlerBase.Error( "Missing required 'collides' parameter.", "set_collision_rule" );
+
+        var collides = HandlerBase.GetBool( args, "collides" ) ? "Collide" : "Ignore";
 
         if ( !Editor.FileSystem.ProjectSettings.FileExists( "Collision.config" ) )
             return HandlerBase.Error( "Collision.config not found.", "set_collision_rule" );

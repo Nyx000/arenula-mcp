@@ -135,6 +135,7 @@ internal static class MeshHandler
 
         var meshComponent = gameObject.Components.Create<MeshComponent>();
         meshComponent.Mesh = mesh;
+        meshComponent.RebuildMesh();
 
         gameObject.Tags.Add( "mesh" );
         gameObject.Tags.Add( "block" );

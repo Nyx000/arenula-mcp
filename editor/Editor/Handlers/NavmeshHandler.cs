@@ -184,57 +184,14 @@ internal static class NavmeshHandler
         {
             var sw = System.Diagnostics.Stopwatch.StartNew();
 
-            // Attempt to trigger navmesh generation via scene's NavMesh property
-            // The exact API depends on the sbox-api research step.
-            // Try reflection first to find the method
-            var navMeshProp = scene.GetType().GetProperty( "NavMesh" );
-            if ( navMeshProp != null )
-            {
-                var navMesh = navMeshProp.GetValue( scene );
-                if ( navMesh != null )
-                {
-                    var generateMethod = navMesh.GetType().GetMethod( "Generate" )
-                        ?? navMesh.GetType().GetMethod( "Build" )
-                        ?? navMesh.GetType().GetMethod( "Rebuild" );
-                    if ( generateMethod != null )
-                    {
-                        generateMethod.Invoke( navMesh, null );
-                        sw.Stop();
-                        return HandlerBase.Success( new
-                        {
-                            message = "Navmesh generation triggered.",
-                            generation_time_ms = sw.ElapsedMilliseconds
-                        } );
-                    }
-                }
-            }
+            Sandbox.Navigation.NavMesh.BakeNavMesh();
 
-            // Fallback: try static NavMesh class
-            var navMeshType = TypeLibrary.GetType( "NavMesh" )?.TargetType
-                ?? Type.GetType( "Sandbox.NavMesh, Sandbox.Game" );
-            if ( navMeshType != null )
+            sw.Stop();
+            return HandlerBase.Success( new
             {
-                var buildMethod = navMeshType.GetMethod( "Generate",
-                        System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public )
-                    ?? navMeshType.GetMethod( "Build",
-                        System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public );
-                if ( buildMethod != null )
-                {
-                    buildMethod.Invoke( null, null );
-                    sw.Stop();
-                    return HandlerBase.Success( new
-                    {
-                        message = "Navmesh generation triggered via static API.",
-                        generation_time_ms = sw.ElapsedMilliseconds
-                    } );
-                }
-            }
-
-            return HandlerBase.Error(
-                "NavMesh generation API not found. This may require manual rebuild in the editor. " +
-                "Check if NavMesh.Generate() or Scene.NavMesh.Build() exists in the current s&box version.",
-                "generate",
-                "Use the editor's navmesh tools to generate manually." );
+                message = "Navmesh generation triggered.",
+                generation_time_ms = sw.ElapsedMilliseconds
+            } );
         }
         catch ( Exception ex )
         {
@@ -299,68 +256,32 @@ internal static class NavmeshHandler
 
         try
         {
-            // Try to use NavMesh.PathBuilder or NavMesh.GetSimplePath
-            // s&box uses NavMesh.PathBuilder pattern:
-            //   var path = NavMesh.PathBuilder( from ).Build( to );
-            //   or NavMesh.GetSimplePath( from, to )
-            var navMeshType = TypeLibrary.GetType( "NavMesh" )?.TargetType
-                ?? Type.GetType( "Sandbox.NavMesh, Sandbox.Game" );
+            var navMesh = scene.NavMesh;
+            if ( navMesh == null )
+                return HandlerBase.Error( "No NavMesh available in the scene. Run navmesh.generate first.", "query_path" );
 
-            if ( navMeshType != null )
+            var result = navMesh.CalculatePath( new Sandbox.Navigation.CalculatePathRequest
             {
-                // Try GetSimplePath first
-                var getSimplePath = navMeshType.GetMethod( "GetSimplePath",
-                    System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public,
-                    null, new[] { typeof( Vector3 ), typeof( Vector3 ) }, null );
+                Start = from,
+                Target = to
+            } );
 
-                if ( getSimplePath != null )
-                {
-                    var result = getSimplePath.Invoke( null, new object[] { from, to } );
-                    if ( result is Vector3[] points )
-                    {
-                        float totalDist = 0;
-                        for ( int i = 1; i < points.Length; i++ )
-                            totalDist += Vector3.DistanceBetween( points[i - 1], points[i] );
+            if ( !result.IsValid || result.Points == null || result.Points.Count == 0 )
+                return HandlerBase.Error( "No path found between the specified points.", "query_path" );
 
-                        return HandlerBase.Success( new
-                        {
-                            message = $"Path found: {points.Length} waypoints, {totalDist:F1} units.",
-                            waypoints = points.Select( p => HandlerBase.V3( p ) ),
-                            distance = MathF.Round( totalDist, 1 ),
-                            waypoint_count = points.Length
-                        } );
-                    }
-                    return HandlerBase.Error( "NavMesh.GetSimplePath returned null — no path found.", "query_path" );
-                }
+            var points = result.Points;
+            float totalDist = 0;
+            for ( int i = 1; i < points.Count; i++ )
+                totalDist += Vector3.DistanceBetween( points[i - 1].Position, points[i].Position );
 
-                // Try GetPathPoints
-                var getPathPoints = navMeshType.GetMethod( "GetPathPoints",
-                    System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public );
-                if ( getPathPoints != null )
-                {
-                    var result = getPathPoints.Invoke( null, new object[] { from, to } );
-                    if ( result is IEnumerable<Vector3> pathPoints )
-                    {
-                        var pts = pathPoints.ToList();
-                        float totalDist = 0;
-                        for ( int i = 1; i < pts.Count; i++ )
-                            totalDist += Vector3.DistanceBetween( pts[i - 1], pts[i] );
-
-                        return HandlerBase.Success( new
-                        {
-                            message = $"Path found: {pts.Count} waypoints, {totalDist:F1} units.",
-                            waypoints = pts.Select( p => HandlerBase.V3( p ) ),
-                            distance = MathF.Round( totalDist, 1 ),
-                            waypoint_count = pts.Count
-                        } );
-                    }
-                }
-            }
-
-            return HandlerBase.Error(
-                "NavMesh path query API not found. This may not be available in the current s&box version.",
-                "query_path",
-                "NavMesh.GetSimplePath(from, to) and NavMesh.GetPathPoints(from, to) were both tried via reflection." );
+            return HandlerBase.Success( new
+            {
+                message = $"Path found: {points.Count} waypoints, {totalDist:F1} units.",
+                waypoints = points.Select( p => HandlerBase.V3( p.Position ) ),
+                distance = MathF.Round( totalDist, 1 ),
+                waypoint_count = points.Count,
+                status = result.Status.ToString()
+            } );
         }
         catch ( Exception ex )
         {

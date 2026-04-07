@@ -247,10 +247,11 @@ internal static class TerrainHandler
         // Sync CPU textures to GPU (makes edits visible)
         terrain.SyncGPUTexture();
 
-        // Also sync GPU back to CPU for saving
+        // Also sync GPU back to CPU for saving — use full terrain resolution as region
+        var res = terrain.Storage.Resolution;
         terrain.SyncCPUTexture(
             Terrain.SyncFlags.Height | Terrain.SyncFlags.Control,
-            default );
+            new RectInt( 0, 0, res, res ) );
 
         // Update materials buffer
         terrain.UpdateMaterialsBuffer();

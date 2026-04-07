@@ -185,4 +185,36 @@ internal static class HandlerBase
     } );
 
     internal static object Confirm( string message ) => Text( message );
+
+    // ── Project root resolution ───────────────────────────────────────
+
+    /// <summary>
+    /// Resolve the project root directory using Editor.FileSystem.Libraries.
+    /// Returns null if it cannot be determined.
+    /// </summary>
+    internal static string GetProjectRoot()
+    {
+        try
+        {
+            var libPath = Editor.FileSystem.Libraries.GetFullPath( "" );
+            return System.IO.Path.GetDirectoryName( libPath );
+        }
+        catch { return null; }
+    }
+
+    /// <summary>
+    /// Resolve a relative path to an absolute path under the project root.
+    /// Returns null (with error message) if the project root cannot be determined.
+    /// </summary>
+    internal static string ResolveProjectPath( string relativePath )
+    {
+        if ( System.IO.Path.IsPathRooted( relativePath ) )
+            return relativePath;
+
+        var root = GetProjectRoot();
+        if ( string.IsNullOrEmpty( root ) )
+            return null;
+
+        return System.IO.Path.Combine( root, relativePath.Replace( '/', System.IO.Path.DirectorySeparatorChar ) );
+    }
 }

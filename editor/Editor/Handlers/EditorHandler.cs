@@ -177,12 +177,8 @@ internal static class EditorHandler
             else bounds = new BBox( Vector3.Min( bounds.Mins, b.Mins ), Vector3.Max( bounds.Maxs, b.Maxs ) );
         }
 
-        // Use reflection to call FrameTo(in BBox) on the session
-        var frameMethod = session.GetType().GetMethod( "FrameTo", new[] { typeof( BBox ) } );
-        if ( frameMethod == null )
-            return HandlerBase.Error( "FrameTo not available on this session type.", "frame_selection" );
-
-        frameMethod.Invoke( session, new object[] { bounds } );
+        // Call FrameTo directly — it takes 'in BBox'
+        session.FrameTo( in bounds );
         return HandlerBase.Confirm( $"Framed camera to {targets.Count} object(s)." );
     }
 
@@ -336,17 +332,7 @@ internal static class EditorHandler
 
             // Fallback: try opening the file directly
             // This works for .cs files not registered in the asset system
-            var absPath = path;
-            if ( !System.IO.Path.IsPathRooted( absPath ) )
-            {
-                // Try to find it relative to the project
-                var anyAsset = AssetSystem.All.FirstOrDefault();
-                if ( anyAsset?.AbsolutePath != null )
-                {
-                    var root = anyAsset.AbsolutePath[..^anyAsset.Path.Length].TrimEnd( '/', '\\' );
-                    absPath = System.IO.Path.Combine( root, path.Replace( '/', System.IO.Path.DirectorySeparatorChar ) );
-                }
-            }
+            var absPath = HandlerBase.ResolveProjectPath( path ) ?? path;
 
             if ( !System.IO.File.Exists( absPath ) )
                 return HandlerBase.Error( $"File not found: '{path}'.", "open_code_file" );

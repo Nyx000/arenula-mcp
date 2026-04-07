@@ -463,6 +463,6 @@ internal static class LightingHandler
             sky.SkyIndirectLighting = iblEl.GetBoolean();
         }
 
-        return HandlerBase.Confirm( $"Updated SkyBox on '{go.Name}'." );
+        return HandlerBase.Confirm( $"Updated SkyBox on '{sky.GameObject.Name}'." );
     }
 }
