@@ -371,23 +371,44 @@ internal static class ToolRegistry
     internal static readonly object Camera = new
     {
         name = "camera",
-        description = "Create and configure camera components, or capture a screenshot of the scene. Use 'capture_viewport' with 'position' and 'look_at' to render from any viewpoint aimed at a target — this is the easiest way to frame a shot. 'rotation' is available as an alternative to 'look_at' for manual control. Without position, captures from the scene's default camera.",
+        description = "Create and configure camera components, or capture screenshots of the scene. 'capture_viewport': single shot from any position/look_at. 'capture_tour': batch multiple named shots in one call — pass a 'shots' array, get all images back at once. 'orbit_capture': auto-orbit a target point at a given radius/elevation, evenly-spaced shots with compass labels — no coordinate math needed.",
         inputSchema = new
         {
             type = "object",
             properties = new Dictionary<string, object>
             {
-                ["action"] = new { type = "string", description = "The operation to perform.", @enum = new[] { "create", "configure", "capture_viewport" } },
+                ["action"] = new { type = "string", description = "The operation to perform.", @enum = new[] { "create", "configure", "capture_viewport", "capture_tour", "orbit_capture" } },
                 ["id"] = new { type = "string", description = "Camera GameObject GUID. Required for: configure." },
                 ["position"] = new { type = "string", description = "Position as 'x,y,z'. Used by: create, capture_viewport." },
                 ["rotation"] = new { type = "string", description = "Rotation as 'pitch,yaw,roll'. Used by: create, capture_viewport. Ignored if look_at is set." },
                 ["look_at"] = new { type = "string", description = "Target position as 'x,y,z' to aim the camera at. Used by: capture_viewport. Takes priority over rotation." },
-                ["fov"] = new { type = "number", description = "Field of view in degrees. Used by: configure, capture_viewport. Default 90 for capture." },
+                ["fov"] = new { type = "number", description = "Field of view in degrees. Used by: configure, capture_viewport, capture_tour (default 90), orbit_capture (default 75)." },
                 ["near_clip"] = new { type = "number", description = "Near clipping plane distance. Used by: configure." },
                 ["far_clip"] = new { type = "number", description = "Far clipping plane distance. Used by: configure." },
-                ["width"] = new { type = "integer", description = "Capture width in pixels (320-3840). Default 1280. Used by: capture_viewport." },
-                ["height"] = new { type = "integer", description = "Capture height in pixels (240-2160). Default 720. Used by: capture_viewport." },
-                ["quality"] = new { type = "integer", description = "JPEG quality 10-100. Default 75. Used by: capture_viewport." }
+                ["width"] = new { type = "integer", description = "Capture width in pixels (320-3840). Default 1280. Used by: capture_viewport, capture_tour, orbit_capture." },
+                ["height"] = new { type = "integer", description = "Capture height in pixels (240-2160). Default 720. Used by: capture_viewport, capture_tour, orbit_capture." },
+                ["quality"] = new { type = "integer", description = "JPEG quality 10-100. Default 75. Used by: capture_viewport, capture_tour, orbit_capture." },
+                ["shots"] = new
+                {
+                    type = "array",
+                    description = "Array of shots for capture_tour. Each element: {position: 'x,y,z', look_at: 'x,y,z', label?: 'string', fov?: number}. Shared width/height/quality/fov apply to all shots unless overridden per-shot.",
+                    items = new
+                    {
+                        type = "object",
+                        properties = new Dictionary<string, object>
+                        {
+                            ["position"] = new { type = "string", description = "Camera world position as 'x,y,z'." },
+                            ["look_at"]  = new { type = "string", description = "Look-at world position as 'x,y,z'." },
+                            ["label"]    = new { type = "string", description = "Label shown in the image caption." },
+                            ["fov"]      = new { type = "number", description = "Per-shot FOV override." }
+                        }
+                    }
+                },
+                ["target"] = new { type = "string", description = "World position as 'x,y,z' to orbit around. Required for: orbit_capture." },
+                ["radius"] = new { type = "number", description = "Orbit radius in world units. Default 300. Used by: orbit_capture." },
+                ["elevation"] = new { type = "number", description = "Camera world Z height during orbit. Default 200. Used by: orbit_capture." },
+                ["count"] = new { type = "integer", description = "Number of evenly-spaced orbit shots (2-32). Default 8. Used by: orbit_capture." },
+                ["start_angle"] = new { type = "number", description = "Starting angle in degrees (0 = east). Default 0. Used by: orbit_capture." }
             },
             required = new[] { "action" },
             additionalProperties = false

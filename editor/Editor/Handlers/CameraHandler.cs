@@ -23,8 +23,10 @@ internal static class CameraHandler
                 "create"           => Create( args ),
                 "configure"        => Configure( args ),
                 "capture_viewport" => CaptureViewport( args ),
+                "capture_tour"     => CaptureTour( args ),
+                "orbit_capture"    => OrbitCapture( args ),
                 _ => HandlerBase.Error( $"Unknown action '{action}'", action,
-                    "Valid actions: create, configure, capture_viewport" )
+                    "Valid actions: create, configure, capture_viewport, capture_tour, orbit_capture" )
             };
         }
         catch ( Exception ex )
@@ -221,5 +223,190 @@ internal static class CameraHandler
             cam.Priority = prEl.GetInt32();
 
         return HandlerBase.Confirm( $"Configured CameraComponent on '{go.Name}'." );
+    }
+
+    // ── capture_tour ──────────────────────────────────────────────────────
+    // Render multiple named shots in one call.
+    // Args: shots (array of {position, look_at, label?, fov?}), width, height, quality, fov
+
+    private static object CaptureTour( JsonElement args )
+    {
+        var scene = SceneHelpers.ResolveScene();
+        if ( scene == null )
+            return HandlerBase.Error( "No active scene.", "capture_tour" );
+
+        if ( !args.TryGetProperty( "shots", out var shotsEl ) || shotsEl.ValueKind != JsonValueKind.Array )
+            return HandlerBase.Error( "Parameter 'shots' is required — array of {position, look_at, label?}.", "capture_tour" );
+
+        var width   = Math.Clamp( HandlerBase.GetInt( args, "width",   1280 ), 320,  3840 );
+        var height  = Math.Clamp( HandlerBase.GetInt( args, "height",  720  ), 240,  2160 );
+        var quality = Math.Clamp( HandlerBase.GetInt( args, "quality", 75   ), 10,   100  );
+        var fov     = HandlerBase.GetFloat( args, "fov", 90f );
+
+        var camComp = FindCamera( scene );
+        if ( camComp == null )
+            return HandlerBase.Error( "No CameraComponent found in scene.", "capture_tour" );
+
+        var pixmap  = new Pixmap( width, height );
+        var content = new List<object>();
+        var fired   = 0;
+        var errors  = new List<string>();
+
+        foreach ( var shot in shotsEl.EnumerateArray() )
+        {
+            var posStr    = HandlerBase.GetString( shot, "position" );
+            var lookAtStr = HandlerBase.GetString( shot, "look_at" );
+            var label     = HandlerBase.GetString( shot, "label" ) ?? $"shot {fired + 1}";
+            var shotFov   = HandlerBase.GetFloat( shot, "fov", fov );
+
+            if ( string.IsNullOrEmpty( posStr ) || string.IsNullOrEmpty( lookAtStr ) )
+            {
+                errors.Add( $"'{label}': missing position or look_at — skipped." );
+                continue;
+            }
+
+            Vector3 pos, lookAt;
+            try
+            {
+                pos    = HandlerBase.ParseVector3( posStr );
+                lookAt = HandlerBase.ParseVector3( lookAtStr );
+            }
+            catch ( Exception ex )
+            {
+                errors.Add( $"'{label}': parse error — {ex.Message}" );
+                continue;
+            }
+
+            var ( data, err ) = RenderShot( camComp, pos, lookAt, shotFov, pixmap, quality );
+            if ( data == null ) { errors.Add( $"'{label}': {err}" ); continue; }
+
+            content.Add( new { type = "image", data = Convert.ToBase64String( data ), mimeType = "image/jpeg" } );
+            content.Add( new { type = "text",  text = $"[{label}]" } );
+            fired++;
+        }
+
+        if ( fired == 0 )
+            return HandlerBase.Error( $"No shots rendered. {string.Join( " ", errors )}", "capture_tour" );
+
+        if ( errors.Count > 0 )
+            content.Add( new { type = "text", text = $"Skipped: {string.Join( "; ", errors )}" } );
+
+        content.Add( new { type = "text", text = $"Tour complete — {fired} shots at {width}x{height}." } );
+        return new { content };
+    }
+
+    // ── orbit_capture ─────────────────────────────────────────────────────
+    // Evenly-spaced orbit shots around a target point.
+    // Args: target (x,y,z), radius, elevation (world Z of camera), count, fov, width, height, quality, start_angle
+
+    private static object OrbitCapture( JsonElement args )
+    {
+        var scene = SceneHelpers.ResolveScene();
+        if ( scene == null )
+            return HandlerBase.Error( "No active scene.", "orbit_capture" );
+
+        var targetStr = HandlerBase.GetString( args, "target" );
+        if ( string.IsNullOrEmpty( targetStr ) )
+            return HandlerBase.Error( "Parameter 'target' is required (x,y,z world position to orbit).", "orbit_capture" );
+
+        Vector3 target;
+        try { target = HandlerBase.ParseVector3( targetStr ); }
+        catch ( Exception ex ) { return HandlerBase.Error( $"Invalid target: {ex.Message}", "orbit_capture" ); }
+
+        var radius     = HandlerBase.GetFloat( args, "radius",      300f );
+        var elevation  = HandlerBase.GetFloat( args, "elevation",   200f );
+        var count      = Math.Clamp( HandlerBase.GetInt( args, "count", 8 ), 2, 32 );
+        var fov        = HandlerBase.GetFloat( args, "fov",         75f  );
+        var width      = Math.Clamp( HandlerBase.GetInt( args, "width",   1280 ), 320, 3840 );
+        var height     = Math.Clamp( HandlerBase.GetInt( args, "height",  720  ), 240, 2160 );
+        var quality    = Math.Clamp( HandlerBase.GetInt( args, "quality", 75   ), 10,  100  );
+        var startAngle = HandlerBase.GetFloat( args, "start_angle", 0f );
+
+        var camComp = FindCamera( scene );
+        if ( camComp == null )
+            return HandlerBase.Error( "No CameraComponent found in scene.", "orbit_capture" );
+
+        var pixmap  = new Pixmap( width, height );
+        var content = new List<object>();
+        var rendered = 0;
+
+        for ( int i = 0; i < count; i++ )
+        {
+            var angleDeg = ( startAngle + 360f * i / count ) % 360f;
+            var angleRad = angleDeg * MathF.PI / 180f;
+
+            var camPos = new Vector3(
+                target.x + radius * MathF.Cos( angleRad ),
+                target.y + radius * MathF.Sin( angleRad ),
+                elevation
+            );
+
+            var compass = angleDeg switch
+            {
+                < 22.5f  => "E",
+                < 67.5f  => "NE",
+                < 112.5f => "N",
+                < 157.5f => "NW",
+                < 202.5f => "W",
+                < 247.5f => "SW",
+                < 292.5f => "S",
+                < 337.5f => "SE",
+                _        => "E"
+            };
+
+            var label = $"orbit {compass} ({angleDeg:F0}°)";
+            var ( data, err ) = RenderShot( camComp, camPos, target, fov, pixmap, quality );
+
+            if ( data == null )
+            {
+                content.Add( new { type = "text", text = $"[{label}] failed: {err}" } );
+                continue;
+            }
+
+            content.Add( new { type = "image", data = Convert.ToBase64String( data ), mimeType = "image/jpeg" } );
+            content.Add( new { type = "text",  text = $"[{label}]" } );
+            rendered++;
+        }
+
+        content.Add( new { type = "text", text = $"Orbit complete — {rendered}/{count} shots, radius={radius}, elevation={elevation}, target={targetStr}." } );
+        return new { content };
+    }
+
+    // ── shared helpers ────────────────────────────────────────────────────
+
+    private static CameraComponent FindCamera( Scene scene ) =>
+        scene.GetAllComponents<CameraComponent>().FirstOrDefault( c => c.IsMainCamera && c.Enabled )
+        ?? scene.GetAllComponents<CameraComponent>().FirstOrDefault( c => c.Enabled );
+
+    /// <summary>
+    /// Move camComp to pos looking at lookAt, render to pixmap, restore original transform.
+    /// Returns (jpeg bytes, null) on success or (null, error message) on failure.
+    /// </summary>
+    private static ( byte[] data, string error ) RenderShot(
+        CameraComponent camComp, Vector3 pos, Vector3 lookAt, float fov, Pixmap pixmap, int quality )
+    {
+        var go      = camComp.GameObject;
+        var origPos = go.WorldPosition;
+        var origRot = go.WorldRotation;
+        var origFov = camComp.FieldOfView;
+
+        go.WorldPosition = pos;
+
+        var dir    = lookAt - pos;
+        var horiz  = new Vector2( dir.x, dir.y );
+        var yaw    = MathF.Atan2( horiz.y, horiz.x ) * ( 180f / MathF.PI );
+        var pitch  = MathF.Atan2( -dir.z, horiz.Length ) * ( 180f / MathF.PI );
+        go.WorldRotation   = Rotation.From( pitch, yaw, 0f );
+        camComp.FieldOfView = fov;
+
+        var ok = camComp.RenderToPixmap( pixmap );
+
+        go.WorldPosition   = origPos;
+        go.WorldRotation   = origRot;
+        camComp.FieldOfView = origFov;
+
+        if ( !ok ) return ( null, "RenderToPixmap failed" );
+        var bytes = pixmap.GetJpeg( quality );
+        return bytes is { Length: > 0 } ? ( bytes, null ) : ( null, "Failed to encode JPEG" );
     }
 }

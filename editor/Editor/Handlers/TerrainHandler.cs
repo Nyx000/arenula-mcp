@@ -58,8 +58,10 @@ internal static class TerrainHandler
 
         var terrain = go.Components.Create<Terrain>();
 
-        // Create storage with specified resolution
-        var storage = new TerrainStorage();
+        // Create storage with resolution set BEFORE assigning to the component.
+        // The Terrain component re-initializes GPU textures on Storage assignment,
+        // so the resolution must already be correct at that point.
+        var storage = terrain.Storage ?? new TerrainStorage();
         storage.SetResolution( resolution );
         storage.TerrainSize = size;
         storage.TerrainHeight = height;
@@ -67,6 +69,9 @@ internal static class TerrainHandler
         terrain.Storage = storage;
         terrain.TerrainSize = size;
         terrain.TerrainHeight = height;
+
+        // Auto-import from a previously exported heightmap if one exists
+        TryAutoImport( terrain );
 
         return HandlerBase.Success( new
         {
@@ -1127,7 +1132,11 @@ internal static class TerrainHandler
         {
             var mat = terrain.Storage.Materials[i];
             if ( mat != null && mat.ResourceName != null &&
-                 mat.ResourceName.IndexOf( materialPath, StringComparison.OrdinalIgnoreCase ) >= 0 )
+                 ( mat.ResourceName.Equals( materialPath, StringComparison.OrdinalIgnoreCase )
+                   || ( mat.ResourcePath != null && (
+                          mat.ResourcePath.Equals( materialPath, StringComparison.OrdinalIgnoreCase )
+                          || System.IO.Path.GetFileNameWithoutExtension( mat.ResourcePath ).Equals( materialPath, StringComparison.OrdinalIgnoreCase )
+                        ) ) ) )
             {
                 materialIndex = i;
                 break;
@@ -1209,21 +1218,240 @@ internal static class TerrainHandler
         // Sync CPU textures to GPU (makes edits visible)
         terrain.SyncGPUTexture();
 
-        // Also sync GPU back to CPU for saving — use full terrain resolution as region
-        var res = terrain.Storage.Resolution;
-        terrain.SyncCPUTexture(
-            Terrain.SyncFlags.Height | Terrain.SyncFlags.Control,
-            new RectInt( 0, 0, res, res ) );
+        // Try to sync GPU back to CPU for saving — may fail if GPU texture
+        // size doesn't match storage resolution (non-fatal, CPU data is
+        // already correct when edits come from stamps/noise/erode).
+        try
+        {
+            var res = terrain.Storage.Resolution;
+            terrain.SyncCPUTexture(
+                Terrain.SyncFlags.Height | Terrain.SyncFlags.Control,
+                new RectInt( 0, 0, res, res ) );
+        }
+        catch ( Exception ex )
+        {
+            Log.Warning( $"[terrain] SyncCPUTexture skipped: {ex.Message}" );
+        }
 
         // Update materials buffer
         terrain.UpdateMaterialsBuffer();
+
+        // Try to persist storage as a file-backed .terrain asset.
+        // This makes play mode work (scene saves file reference, not null).
+        var persisted = TryPersistStorageAsFile( terrain );
+
+        // Also auto-export heightmap PNG as a backup
+        var exported = TryAutoExport( terrain );
 
         return HandlerBase.Success( new
         {
             id = terrain.GameObject.Id.ToString(),
             name = terrain.GameObject.Name,
+            storagePersisted = persisted,
+            heightmapExported = exported,
             message = "Terrain synced (CPU→GPU + GPU→CPU). Changes are now visible and saveable."
+                    + ( persisted ? " Storage saved to .terrain file." : "" )
+                    + ( exported ? " Heightmap PNG backup exported." : "" )
         } );
+    }
+
+    // ── auto-persistence helpers ────────────────────────────────────
+
+    /// <summary>
+    /// Try to persist the TerrainStorage as a file-backed .terrain asset.
+    /// This is the proper fix: the scene saves a file reference instead of null.
+    /// </summary>
+    private static bool TryPersistStorageAsFile( Terrain terrain )
+    {
+        try
+        {
+            var storage = terrain.Storage;
+            if ( storage == null ) return false;
+
+            // If it already has a resource path, it's already file-backed
+            if ( !string.IsNullOrEmpty( storage.ResourcePath ) && storage.ResourcePath != "sandbox.terrain" )
+            {
+                Log.Info( $"[terrain] Storage already file-backed: {storage.ResourcePath}" );
+                return true;
+            }
+
+            var name = terrain.GameObject.Name?.ToLower().Replace( ' ', '_' ) ?? "terrain";
+            var relativePath = $"terrain_data/{name}.terrain";
+            var absPath = HandlerBase.ResolveProjectPath( relativePath );
+            if ( absPath == null ) return false;
+
+            var dir = System.IO.Path.GetDirectoryName( absPath );
+            if ( !string.IsNullOrEmpty( dir ) && !System.IO.Directory.Exists( dir ) )
+                System.IO.Directory.CreateDirectory( dir );
+
+            // Serialize the storage to JSON (materials included —
+            // they resolve if .tmat files exist locally in the project).
+            var json = storage.Serialize();
+            var jsonText = json.ToJsonString();
+            System.IO.File.WriteAllText( absPath, jsonText );
+
+            // Register the file with the asset system and compile
+            var asset = AssetSystem.RegisterFile( absPath );
+            if ( asset != null )
+            {
+                asset.Compile( true );
+                // Try loading via the asset's registered path
+                var loaded = ResourceLibrary.Get<TerrainStorage>( asset.Path );
+                if ( loaded != null )
+                {
+                    terrain.Storage = loaded;
+                    Log.Info( $"[terrain] Storage persisted via RegisterFile: {asset.Path}" );
+                    return true;
+                }
+                Log.Warning( $"[terrain] RegisterFile OK but ResourceLibrary.Get returned null (asset.Path={asset.Path})" );
+            }
+
+            // Fallback: try CompileResource + direct path load
+            var compiled = AssetSystem.CompileResource( relativePath, jsonText );
+            Log.Info( $"[terrain] CompileResource({relativePath}) = {compiled}" );
+
+            if ( compiled )
+            {
+                var loaded2 = ResourceLibrary.Get<TerrainStorage>( relativePath );
+                if ( loaded2 != null )
+                {
+                    terrain.Storage = loaded2;
+                    Log.Info( $"[terrain] Storage persisted via CompileResource: {relativePath}" );
+                    return true;
+                }
+            }
+
+            Log.Warning( $"[terrain] Could not persist storage to file. absPath={absPath}" );
+            return false;
+        }
+        catch ( Exception ex )
+        {
+            Log.Warning( $"[terrain] TryPersistStorageAsFile failed: {ex.Message}" );
+            return false;
+        }
+    }
+
+    private static string GetAutoHeightmapPath( Terrain terrain )
+    {
+        var name = terrain.GameObject.Name?.ToLower().Replace( ' ', '_' ) ?? "terrain";
+        return $"terrain_backups/{name}_heightmap.png";
+    }
+
+    /// <summary>Export the heightmap to a PNG so it survives scene save/load cycles.</summary>
+    private static bool TryAutoExport( Terrain terrain )
+    {
+        try
+        {
+            var storage = terrain.Storage;
+            if ( storage?.HeightMap == null ) return false;
+
+            var relativePath = GetAutoHeightmapPath( terrain );
+            var absPath = HandlerBase.ResolveProjectPath( relativePath );
+            if ( absPath == null ) return false;
+
+            var dir = System.IO.Path.GetDirectoryName( absPath );
+            if ( !string.IsNullOrEmpty( dir ) && !System.IO.Directory.Exists( dir ) )
+                System.IO.Directory.CreateDirectory( dir );
+
+            var res = storage.Resolution;
+            var bitmap = new Bitmap( res, res );
+            for ( int y = 0; y < res; y++ )
+            for ( int x = 0; x < res; x++ )
+            {
+                var idx = y * res + x;
+                var n = storage.HeightMap[idx] / 65535.0f;
+                bitmap.SetPixel( x, y, new Color( n, n, n, 1f ) );
+            }
+
+            var pngData = bitmap.ToPng();
+            bitmap.Dispose();
+            System.IO.File.WriteAllBytes( absPath, pngData );
+
+            // Also save metadata (size, height, resolution) alongside the PNG
+            var metaPath = absPath + ".meta";
+            var meta = $"{{\"size\":{terrain.TerrainSize},\"height\":{terrain.TerrainHeight},\"resolution\":{res}}}";
+            System.IO.File.WriteAllText( metaPath, meta );
+
+            Log.Info( $"[terrain] Auto-exported heightmap to {relativePath}" );
+            return true;
+        }
+        catch ( Exception ex )
+        {
+            Log.Warning( $"[terrain] Auto-export failed: {ex.Message}" );
+            return false;
+        }
+    }
+
+    /// <summary>If storage is empty and a backed-up heightmap PNG exists, restore it.</summary>
+    private static bool TryAutoImport( Terrain terrain )
+    {
+        try
+        {
+            var storage = terrain.Storage;
+            if ( storage == null ) return false;
+
+            // Only import if the heightmap is blank (all zeros)
+            bool isBlank = true;
+            if ( storage.HeightMap != null )
+            {
+                for ( int i = 0; i < Math.Min( 100, storage.HeightMap.Length ); i++ )
+                {
+                    if ( storage.HeightMap[i] != 0 ) { isBlank = false; break; }
+                }
+            }
+            if ( !isBlank ) return false;
+
+            var relativePath = GetAutoHeightmapPath( terrain );
+            var absPath = HandlerBase.ResolveProjectPath( relativePath );
+            if ( absPath == null || !System.IO.File.Exists( absPath ) ) return false;
+
+            // Read metadata if available
+            var metaPath = absPath + ".meta";
+            if ( System.IO.File.Exists( metaPath ) )
+            {
+                var metaJson = System.IO.File.ReadAllText( metaPath );
+                var meta = System.Text.Json.JsonDocument.Parse( metaJson ).RootElement;
+                if ( meta.TryGetProperty( "resolution", out var resEl ) )
+                    storage.SetResolution( resEl.GetInt32() );
+                if ( meta.TryGetProperty( "size", out var sizeEl ) )
+                {
+                    storage.TerrainSize = sizeEl.GetSingle();
+                    terrain.TerrainSize = sizeEl.GetSingle();
+                }
+                if ( meta.TryGetProperty( "height", out var heightEl ) )
+                {
+                    storage.TerrainHeight = heightEl.GetSingle();
+                    terrain.TerrainHeight = heightEl.GetSingle();
+                }
+            }
+
+            var bytes = System.IO.File.ReadAllBytes( absPath );
+            var bitmap = Bitmap.CreateFromBytes( bytes );
+            if ( bitmap == null || !bitmap.IsValid ) return false;
+
+            var res = storage.Resolution;
+            if ( bitmap.Width != res || bitmap.Height != res )
+                bitmap = bitmap.Resize( res, res );
+
+            var pixels = bitmap.GetPixels();
+            for ( int i = 0; i < Math.Min( pixels.Length, storage.HeightMap.Length ); i++ )
+            {
+                var luminance = pixels[i].r * 0.299f + pixels[i].g * 0.587f + pixels[i].b * 0.114f;
+                storage.HeightMap[i] = (ushort)( Math.Clamp( luminance, 0f, 1f ) * 65535f );
+            }
+            bitmap.Dispose();
+
+            // Sync to GPU so it's visible
+            terrain.SyncGPUTexture();
+
+            Log.Info( $"[terrain] Auto-imported heightmap from {relativePath}" );
+            return true;
+        }
+        catch ( Exception ex )
+        {
+            Log.Warning( $"[terrain] Auto-import failed: {ex.Message}" );
+            return false;
+        }
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────
@@ -1280,28 +1508,43 @@ internal static class TerrainHandler
     private static Terrain FindTerrain( Scene scene, JsonElement args, string action )
     {
         var id = HandlerBase.GetString( args, "id" );
+        Terrain terrain = null;
 
         if ( !string.IsNullOrEmpty( id ) )
         {
             var go = SceneHelpers.FindByIdOrThrow( scene, id, action );
-            var terrain = go.Components.Get<Terrain>();
+            terrain = go.Components.Get<Terrain>();
             if ( terrain == null )
                 throw new ArgumentException( $"GameObject '{id}' does not have a Terrain component." );
-            return terrain;
+        }
+        else
+        {
+            // No id provided — find the first Terrain in the scene
+            var allTerrains = SceneHelpers.WalkAll( scene )
+                .Select( go => go.Components.Get<Terrain>() )
+                .Where( t => t != null )
+                .ToList();
+
+            if ( allTerrains.Count == 0 )
+                throw new ArgumentException( "No Terrain found in scene. Use terrain.create first." );
+
+            if ( allTerrains.Count > 1 )
+                throw new ArgumentException( $"Multiple terrains found ({allTerrains.Count}). Provide 'id' to specify which one." );
+
+            terrain = allTerrains[0];
         }
 
-        // No id provided — find the first Terrain in the scene
-        var allTerrains = SceneHelpers.WalkAll( scene )
-            .Select( go => go.Components.Get<Terrain>() )
-            .Where( t => t != null )
-            .ToList();
+        // If storage exists but heightmap is blank, try restoring from auto-export
+        if ( terrain.Storage?.HeightMap != null && action != "create" )
+        {
+            bool isBlank = true;
+            for ( int i = 0; i < Math.Min( 100, terrain.Storage.HeightMap.Length ); i++ )
+            {
+                if ( terrain.Storage.HeightMap[i] != 0 ) { isBlank = false; break; }
+            }
+            if ( isBlank ) TryAutoImport( terrain );
+        }
 
-        if ( allTerrains.Count == 0 )
-            throw new ArgumentException( "No Terrain found in scene. Use terrain.create first." );
-
-        if ( allTerrains.Count > 1 )
-            throw new ArgumentException( $"Multiple terrains found ({allTerrains.Count}). Provide 'id' to specify which one." );
-
-        return allTerrains[0];
+        return terrain;
     }
 }

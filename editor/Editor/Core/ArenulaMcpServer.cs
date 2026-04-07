@@ -106,6 +106,17 @@ public static class ArenulaMcpServer
 
     // ── Lifecycle ──────────────────────────────────────────────────────────
 
+    /// <summary>
+    /// On hotload, stop the existing server (which retains its listener reference via
+    /// preserved static state) and restart it so new handler code is picked up.
+    /// </summary>
+    [EditorEvent.Hotload]
+    public static void OnHotload()
+    {
+        if ( IsRunning ) StopServer();
+        StartServer();
+    }
+
     public static void StartServer()
     {
         if ( _listener != null && _listener.IsListening )
