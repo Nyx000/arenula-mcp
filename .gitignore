@@ -8,5 +8,9 @@ Thumbs.db
 .mcp.json
 editor/Editor/arenula_mcp.editor.csproj
 editor/Editor/Properties/launchSettings.json
+editor/.sbox/
+editor/*.slnx
+editor/.vscode/
+editor/ProjectSettings/
 test/
 .superpowers/
