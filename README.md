@@ -1,6 +1,6 @@
 # Arenula
 
-**[nyx000.github.io/Arenula-MCP](https://nyx000.github.io/Arenula-MCP/)**
+**[nyx000.github.io/arenula-mcp](https://nyx000.github.io/arenula-mcp/)**
 
 MCP server suite for the [s&box](https://sbox.game) game engine. Connects AI coding assistants to the s&box editor — reading scenes, creating objects, compiling code, managing assets, and more.
 
