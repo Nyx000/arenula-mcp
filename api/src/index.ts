@@ -11,6 +11,7 @@ import { registerSearchDocs } from './tools/search-docs.js'
 import { registerUpdateSource } from './tools/update-source.js'
 import { registerSearchPackages } from './tools/search-packages.js'
 import { registerGetPackage } from './tools/get-package.js'
+import { registerTextures } from './tools/textures.js'
 
 async function main() {
   console.error('[arenula-api] Starting S&box API MCP Server...')
@@ -36,6 +37,9 @@ async function main() {
   // UGC Workshop tools (no indexes needed - live API)
   registerSearchPackages(server)
   registerGetPackage(server)
+
+  // Texture fetcher (ambientCG + Poly Haven - live API)
+  registerTextures(server)
 
   // Connect via stdio
   const transport = new StdioServerTransport()

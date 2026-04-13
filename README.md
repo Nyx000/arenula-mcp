@@ -13,7 +13,7 @@ Designed following [Anthropic's MCP best practices](https://www.anthropic.com/en
 | Server | What it does | Runtime | Transport |
 |--------|-------------|---------|-----------|
 | **Editor** | Scene manipulation, compilation, assets, terrain | C# plugin inside s&box | SSE `:8098` |
-| **API** | Offline type/member reference (~1,800 types, ~15,000 members) | Node.js | stdio |
+| **API** | Offline type/member reference (~1,800 types, ~15,000 members), PBR texture fetching | Node.js | stdio |
 | **Docs** | Narrative docs from sbox.game (raw markdown via `.md` endpoints) | Node.js | stdio |
 
 ## Setup

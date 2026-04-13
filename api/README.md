@@ -13,7 +13,7 @@ npm run build
 node dist/index.js
 ```
 
-## Tools (8)
+## Tools (9)
 
 | Tool | Purpose |
 |---|---|
@@ -25,6 +25,7 @@ node dist/index.js
 | `update_api_source` | Re-download API data from a new CDN URL |
 | `search_packages` | Search s&box Workshop/UGC |
 | `get_package` | Get Workshop package details |
+| `textures` | Search, download, and generate .tmat files from PBR texture providers (ambientCG, Poly Haven) |
 
 ## Updating API Data
 
