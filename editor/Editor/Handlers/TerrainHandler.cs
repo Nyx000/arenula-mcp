@@ -54,7 +54,8 @@ internal static class TerrainHandler
         var size = HandlerBase.GetFloat( args, "size", 1024f );
         var height = HandlerBase.GetFloat( args, "height", 512f );
         var resolution = HandlerBase.GetInt( args, "resolution", 512 );
-        var name = HandlerBase.GetString( args, "name", "Terrain" );
+        var sceneName = scene.Name ?? "Terrain";
+        var name = HandlerBase.GetString( args, "name", $"{sceneName} Terrain" );
 
         var go = scene.CreateObject();
         go.Name = name;

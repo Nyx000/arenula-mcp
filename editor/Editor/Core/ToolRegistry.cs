@@ -541,9 +541,10 @@ internal static class ToolRegistry
             {
                 ["action"] = new { type = "string", description = "The operation to perform.", @enum = new[] { "create", "configure", "get_info", "get_height", "get_height_region", "set_height", "noise", "erode", "stamp", "add_material", "remove_material", "get_material_at", "blend_materials", "set_hole", "paint_material", "import_heightmap", "export_heightmap", "sync" } },
                 ["id"] = new { type = "string", description = "Terrain GameObject GUID. Optional for most actions (auto-finds if only one terrain exists)." },
-                ["size"] = new { type = "number", description = "Terrain world size. Used by: create." },
-                ["height"] = new { type = "number", description = "Height value. create: max height. set_height: target or delta height in world units." },
-                ["resolution"] = new { type = "integer", description = "Heightmap resolution. Used by: create." },
+                ["name"] = new { type = "string", description = "GameObject name for the terrain. IMPORTANT: determines the .terrain storage filename (terrain_data/{name}.terrain). Use unique names per scene to avoid overwriting other terrains. Used by: create. Default: scene name." },
+                ["size"] = new { type = "number", description = "Total terrain size in inches (= World Scale × Heightmap Size). e.g. 19968 for ~500m with scale=39, res=512. Used by: create. Default: 1024." },
+                ["height"] = new { type = "number", description = "Height value in inches. create: max terrain elevation (e.g. 10000 ~= 254m). set_height: target or delta height in world units." },
+                ["resolution"] = new { type = "integer", description = "Heightmap resolution (512, 1024, 2048, 4096, or 8192). Higher = more detail but more VRAM: 512=~1.5MB, 2048=24MB, 4096=96MB. Used by: create. Default: 512." },
                 ["position"] = new { type = "string", description = "s&box world position 'x,y,z'. Terrain occupies [terrainPos, terrainPos+size] in X and Y. Use get_info to find terrain position and size. Required for: get_height, set_height, get_material_at, set_hole, paint_material, stamp, get_height_region, blend_materials." },
                 ["material"] = new { type = "string", description = "Terrain material name. Required for: paint_material." },
                 ["material_path"] = new { type = "string", description = ".terrain_material asset path. Used by: add_material, remove_material." },
