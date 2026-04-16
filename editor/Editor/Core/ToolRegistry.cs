@@ -3,7 +3,7 @@ using System.Collections.Generic;
 namespace Arenula;
 
 /// <summary>
-/// All 19 Arenula tool schemas for the MCP tools/list response.
+/// All 22 Arenula tool schemas for the MCP tools/list response.
 /// Each tool uses the omnibus pattern: required action enum + flat params.
 /// Descriptions follow Anthropic best practices: 3-4 sentences, negative guidance.
 /// </summary>
@@ -17,7 +17,8 @@ internal static class ToolRegistry
         AssetQuery, AssetManage, Editor, Compile,
         Mesh, Lighting, Physics, Audio,
         Effects, Camera, Navmesh, Session,
-        Project, Cloud, Terrain
+        Project, Cloud, Terrain, Trace,
+        Player, Networking
     };
 
     // ── Tool 1: scene ────────────────────────────────────────────────
@@ -314,7 +315,7 @@ internal static class ToolRegistry
     internal static readonly object Physics = new
     {
         name = "physics",
-        description = "Add and configure physics components: colliders, rigidbodies, character controllers, and joints. Use 'add_collider' with a 'type' parameter for any shape: box, sphere, capsule, hull (convex), plane (finite quad — default 50x50, NOT infinite), or model (auto-generated from mesh). Use 'create_joint' for physics constraints between objects: fixed, spring, hinge, ball, or slider. Plane colliders are finite meshes — for large ground planes, use a BoxCollider with large dimensions instead.",
+        description = "Add and configure physics components: colliders, rigidbodies, character controllers, and joints. Use 'add_collider' with a 'type' parameter for any shape: box, sphere, capsule, hull (convex), plane (finite quad — default 50x50, NOT infinite), or model (auto-generated from mesh). Use 'create_joint' for physics constraints between objects: fixed, spring, hinge, ball, slider, wheel, or upright (keeps objects from tipping over). Plane colliders are finite meshes — for large ground planes, use a BoxCollider with large dimensions instead.",
         inputSchema = new
         {
             type = "object",
@@ -332,7 +333,10 @@ internal static class ToolRegistry
                 ["mass"] = new { type = "number", description = "Mass in kg. Used by: add_rigidbody." },
                 ["enhanced_ccd"] = new { type = "boolean", description = "Enable enhanced continuous collision detection for fast-moving objects (bullets, rockets). Used by: add_rigidbody." },
                 ["body_a"] = new { type = "string", description = "First body GUID. Required for: create_joint." },
-                ["body_b"] = new { type = "string", description = "Second body GUID. Used by: create_joint." }
+                ["body_b"] = new { type = "string", description = "Second body GUID. Used by: create_joint." },
+                ["hertz"] = new { type = "number", description = "Spring stiffness in Hz. Used by: create_joint (upright type)." },
+                ["damping_ratio"] = new { type = "number", description = "Spring damping ratio (1 = critically damped). Used by: create_joint (upright type)." },
+                ["max_torque"] = new { type = "number", description = "Max torque in Nm (0 = unlimited). Used by: create_joint (upright type)." }
             },
             required = new[] { "action" },
             additionalProperties = false
@@ -370,18 +374,46 @@ internal static class ToolRegistry
     internal static readonly object Effects = new
     {
         name = "effects",
-        description = "Create and configure visual effects in the scene. Use 'create' with the 'type' parameter: particle (particle system), fog (volumetric fog zone), beam (laser/beam between points), rope (verlet physics rope), radius_damage (area damage trigger), or render_entity (custom render object). Use 'configure_particle' or 'configure_post_processing' to modify effect-specific properties. This tool creates scene-placed effects — for triggering effects at runtime from code, use the particle/sound APIs directly.",
+        description = "Create and configure visual effects in the scene. Use 'create' with the 'type' parameter: particle (particle system), fog (volumetric fog zone), beam (laser/beam between points), rope (verlet physics rope), radius_damage (area damage trigger), render_entity (custom render object), sprite (2D billboard sprite), prop (physics-enabled model), or world_panel (3D UI panel). Use 'configure_particle', 'configure_post_processing', 'configure_sprite', 'configure_prop', or 'configure_world_panel' to modify effect-specific properties. This tool creates scene-placed effects — for triggering effects at runtime from code, use the particle/sound APIs directly.",
         inputSchema = new
         {
             type = "object",
             properties = new Dictionary<string, object>
             {
-                ["action"] = new { type = "string", description = "The operation to perform.", @enum = new[] { "create", "configure_particle", "configure_post_processing" } },
-                ["id"] = new { type = "string", description = "Target GameObject GUID. Required for: configure_particle, configure_post_processing." },
-                ["component_id"] = new { type = "string", description = "Effect component GUID. Required for: configure_particle." },
-                ["type"] = new { type = "string", description = "Effect type. Required for: create.", @enum = new[] { "particle", "fog", "beam", "rope", "radius_damage", "render_entity" } },
+                ["action"] = new { type = "string", description = "The operation to perform.", @enum = new[] { "create", "configure_particle", "configure_post_processing", "configure_sprite", "configure_prop", "configure_world_panel" } },
+                ["id"] = new { type = "string", description = "Target GameObject GUID. Required for: configure_particle, configure_post_processing, configure_sprite, configure_prop, configure_world_panel." },
+                ["component_id"] = new { type = "string", description = "Effect component GUID. Required for: configure_particle. Optional for: configure_sprite, configure_prop, configure_world_panel (disambiguates if multiple of same type)." },
+                ["type"] = new { type = "string", description = "Effect type. Required for: create.", @enum = new[] { "particle", "fog", "beam", "rope", "radius_damage", "render_entity", "sprite", "prop", "world_panel" } },
                 ["position"] = new { type = "string", description = "Position as 'x,y,z'. Used by: create." },
-                ["properties"] = new { type = "string", description = "JSON object of effect-specific properties. Used by: create, configure_particle, configure_post_processing." }
+                ["name"] = new { type = "string", description = "Object name. Used by: create." },
+                ["properties"] = new { type = "string", description = "JSON object of effect-specific properties. Used by: create, configure_particle, configure_post_processing." },
+                ["sprite"] = new { type = "string", description = "Sprite asset path. Used by: create (type=sprite), configure_sprite." },
+                ["model"] = new { type = "string", description = "Model asset path. Required for: create (type=prop). Used by: configure_prop." },
+                ["tint"] = new { type = "string", description = "Tint color as CSS hex or 'r,g,b'. Used by: create (type=prop), configure_prop." },
+                ["health"] = new { type = "number", description = "Prop health. Used by: create (type=prop), configure_prop." },
+                ["is_static"] = new { type = "boolean", description = "Static prop (no physics). Used by: create (type=prop), configure_prop." },
+                ["is_flammable"] = new { type = "boolean", description = "Can catch fire. Used by: create (type=prop), configure_prop." },
+                ["start_asleep"] = new { type = "boolean", description = "Start with physics sleeping. Used by: create (type=prop), configure_prop." },
+                ["material_group"] = new { type = "string", description = "Material group name. Used by: create (type=prop), configure_prop." },
+                ["body_groups"] = new { type = "integer", description = "Body group bitmask (uint64). Used by: configure_prop." },
+                ["billboard"] = new { type = "string", description = "Billboard mode: None, FullBillboard, VerticalBillboard. Used by: create (type=sprite), configure_sprite." },
+                ["lighting"] = new { type = "boolean", description = "Use scene lighting. Used by: create (type=sprite), configure_sprite." },
+                ["shadows"] = new { type = "boolean", description = "Cast shadows. Used by: create (type=sprite), configure_sprite." },
+                ["opaque"] = new { type = "boolean", description = "Render as opaque. Used by: create (type=sprite), configure_sprite." },
+                ["flip_horizontal"] = new { type = "boolean", description = "Flip sprite horizontally. Used by: create (type=sprite), configure_sprite." },
+                ["flip_vertical"] = new { type = "boolean", description = "Flip sprite vertically. Used by: create (type=sprite), configure_sprite." },
+                ["animation"] = new { type = "string", description = "Starting animation name. Used by: create (type=sprite)." },
+                ["playback_speed"] = new { type = "number", description = "Animation playback speed. Used by: create (type=sprite), configure_sprite." },
+                ["texture_filter"] = new { type = "string", description = "Texture filter mode: Anisotropic, Bilinear, Nearest. Used by: configure_sprite." },
+                ["depth_feather"] = new { type = "number", description = "Depth feather distance. Used by: configure_sprite." },
+                ["fog_strength"] = new { type = "number", description = "Fog contribution strength. Used by: configure_sprite." },
+                ["alpha_cutoff"] = new { type = "number", description = "Alpha cutoff threshold. Used by: configure_sprite." },
+                ["panel_size"] = new { type = "string", description = "Panel size as 'x,y'. Used by: create (type=world_panel), configure_world_panel." },
+                ["look_at_camera"] = new { type = "boolean", description = "Panel faces camera. Used by: create (type=world_panel), configure_world_panel." },
+                ["render_scale"] = new { type = "number", description = "Panel render scale. Used by: create (type=world_panel), configure_world_panel." },
+                ["interaction_range"] = new { type = "number", description = "Interaction range. Used by: create (type=world_panel), configure_world_panel." },
+                ["horizontal_align"] = new { type = "string", description = "Horizontal alignment: Left, Center, Right. Used by: create (type=world_panel), configure_world_panel." },
+                ["vertical_align"] = new { type = "string", description = "Vertical alignment: Top, Center, Bottom. Used by: create (type=world_panel), configure_world_panel." }
             },
             required = new[] { "action" },
             additionalProperties = false
@@ -442,22 +474,25 @@ internal static class ToolRegistry
     internal static readonly object Navmesh = new
     {
         name = "navmesh",
-        description = "Create and manage AI navigation meshes. Place 'create_area' volumes to define walkable regions, 'create_link' for off-mesh connections (jumps, ladders), and 'create_agent' on GameObjects that need pathfinding. Use 'generate' to build the navmesh after placing areas — this can take several seconds on large scenes. Use 'query_path' to test pathfinding between two points. For physics constraints between objects (hinges, springs), use 'physics' with the 'create_joint' action instead.",
+        description = "Create and manage AI navigation meshes. Place 'create_area' volumes to define walkable regions, 'create_link' for off-mesh connections (jumps, ladders), and 'create_agent' on GameObjects that need pathfinding. Use 'generate' to build the full navmesh — this can take several seconds on large scenes. For open-world games, use 'set_defer_generation' to skip auto-generation on load, then 'generate_tile' to incrementally build tiles on demand, and 'unload_tile' to free tiles no longer needed. Use 'query_path' to test pathfinding between two points.",
         inputSchema = new
         {
             type = "object",
             properties = new Dictionary<string, object>
             {
-                ["action"] = new { type = "string", description = "The operation to perform.", @enum = new[] { "create_agent", "create_area", "create_link", "generate", "get_status", "query_path" } },
+                ["action"] = new { type = "string", description = "The operation to perform.", @enum = new[] { "create_agent", "create_area", "create_link", "generate", "generate_tile", "unload_tile", "set_defer_generation", "get_status", "query_path" } },
                 ["id"] = new { type = "string", description = "Target GameObject GUID. Required for: create_agent." },
-                ["position"] = new { type = "string", description = "Position as 'x,y,z'. Used by: create_area." },
+                ["position"] = new { type = "string", description = "Position as 'x,y,z'. Used by: create_area, generate_tile, unload_tile." },
                 ["size"] = new { type = "string", description = "Area size as 'x,y,z'. Used by: create_area." },
                 ["start_position"] = new { type = "string", description = "Link start as 'x,y,z'. Required for: create_link." },
                 ["end_position"] = new { type = "string", description = "Link end as 'x,y,z'. Required for: create_link." },
                 ["from"] = new { type = "string", description = "Path start as 'x,y,z'. Required for: query_path." },
                 ["to"] = new { type = "string", description = "Path end as 'x,y,z'. Required for: query_path." },
                 ["speed"] = new { type = "number", description = "Agent speed. Used by: create_agent." },
-                ["radius"] = new { type = "number", description = "Agent radius. Used by: create_agent." }
+                ["radius"] = new { type = "number", description = "Agent radius. Used by: create_agent." },
+                ["bounds_min"] = new { type = "string", description = "Bounds minimum as 'x,y,z'. Used by: generate_tile, unload_tile (alternative to position)." },
+                ["bounds_max"] = new { type = "string", description = "Bounds maximum as 'x,y,z'. Used by: generate_tile, unload_tile (alternative to position)." },
+                ["enabled"] = new { type = "boolean", description = "Enable/disable deferred generation. Used by: set_defer_generation. Default: true." }
             },
             required = new[] { "action" },
             additionalProperties = false
@@ -533,13 +568,13 @@ internal static class ToolRegistry
     internal static readonly object Terrain = new
     {
         name = "terrain",
-        description = "Full terrain editing: create, sculpt heightmaps, apply procedural noise, paint materials, punch holes, import/export heightmaps. Use 'set_height' to sculpt with modes: set, raise, lower, flatten, smooth. Use 'noise' for procedural generation (perlin, ridged, billow). Use 'get_height' / 'get_material_at' to query terrain state. Use 'set_hole' for caves/tunnels. Use 'import_heightmap' / 'export_heightmap' for grayscale PNG I/O. Always call 'sync' after edits.",
+        description = "Full terrain editing: create, sculpt heightmaps, apply procedural noise, paint materials, punch holes, import/export heightmaps, and manage clutter (vegetation/debris). Use 'set_height' to sculpt with modes: set, raise, lower, flatten, smooth. Use 'noise' for procedural generation (perlin, ridged, billow). Use 'get_height' / 'get_material_at' to query terrain state. Use 'set_hole' for caves/tunnels. Use 'import_heightmap' / 'export_heightmap' for grayscale PNG I/O. Use 'configure_clutter' to set clutter definition/seed/mode, 'regenerate_clutter' to rebuild clutter tiles, and 'clear_clutter' to remove all clutter. Always call 'sync' after heightmap/material edits.",
         inputSchema = new
         {
             type = "object",
             properties = new Dictionary<string, object>
             {
-                ["action"] = new { type = "string", description = "The operation to perform.", @enum = new[] { "create", "configure", "get_info", "get_height", "get_height_region", "set_height", "noise", "erode", "stamp", "add_material", "remove_material", "get_material_at", "blend_materials", "set_hole", "paint_material", "import_heightmap", "export_heightmap", "sync" } },
+                ["action"] = new { type = "string", description = "The operation to perform.", @enum = new[] { "create", "configure", "get_info", "get_height", "get_height_region", "set_height", "noise", "erode", "stamp", "add_material", "remove_material", "get_material_at", "blend_materials", "set_hole", "paint_material", "import_heightmap", "export_heightmap", "sync", "configure_clutter", "regenerate_clutter", "clear_clutter" } },
                 ["id"] = new { type = "string", description = "Terrain GameObject GUID. Optional for most actions (auto-finds if only one terrain exists)." },
                 ["name"] = new { type = "string", description = "GameObject name for the terrain. IMPORTANT: determines the .terrain storage filename (terrain_data/{name}.terrain). Use unique names per scene to avoid overwriting other terrains. Used by: create. Default: scene name." },
                 ["size"] = new { type = "number", description = "Total terrain size in inches (= World Scale × Heightmap Size). e.g. 19968 for ~500m with scale=39, res=512. Used by: create. Default: 1024." },
@@ -551,7 +586,7 @@ internal static class ToolRegistry
                 ["material_index"] = new { type = "integer", description = "Material index. Used by: remove_material." },
                 ["radius"] = new { type = "number", description = "Brush radius (world units). Used by: set_height, set_hole, paint_material. Default: 50." },
                 ["strength"] = new { type = "number", description = "Brush strength 0-1. Used by: set_height, paint_material. Default: 1." },
-                ["mode"] = new { type = "string", description = "set_height: 'set'|'raise'|'lower'|'flatten'|'smooth'. noise: 'set'|'add'|'multiply'. Default: 'set'." },
+                ["mode"] = new { type = "string", description = "set_height: 'set'|'raise'|'lower'|'flatten'|'smooth'. noise: 'set'|'add'|'multiply'. configure_clutter: ClutterComponent.ClutterMode enum value. Default: 'set'." },
                 ["falloff"] = new { type = "string", description = "Brush falloff: 'linear'|'smooth'|'none'. Used by: set_height. Default: 'linear'." },
                 ["type"] = new { type = "string", description = "Noise type: 'perlin'|'ridged'|'billow'. Used by: noise. Default: 'perlin'." },
                 ["scale"] = new { type = "number", description = "Noise frequency scale. Used by: noise. Default: 0.01." },
@@ -559,7 +594,7 @@ internal static class ToolRegistry
                 ["octaves"] = new { type = "integer", description = "Noise octave layers. Used by: noise. Default: 4." },
                 ["persistence"] = new { type = "number", description = "Amplitude decay per octave. Used by: noise. Default: 0.5." },
                 ["lacunarity"] = new { type = "number", description = "Frequency increase per octave. Used by: noise. Default: 2.0." },
-                ["seed"] = new { type = "integer", description = "Noise random seed. Used by: noise. Default: 42." },
+                ["seed"] = new { type = "integer", description = "Noise random seed. Used by: noise. Used by: configure_clutter." },
                 ["offset_x"] = new { type = "number", description = "Noise X offset. Used by: noise." },
                 ["offset_y"] = new { type = "number", description = "Noise Y offset. Used by: noise." },
                 ["enabled"] = new { type = "boolean", description = "true = punch hole, false = fill. Used by: set_hole. Default: true." },
@@ -580,7 +615,133 @@ internal static class ToolRegistry
                 ["overlay_index"] = new { type = "integer", description = "Overlay material index 0-31. Used by: blend_materials." },
                 ["blend"] = new { type = "number", description = "Blend factor 0-1 between base and overlay. Used by: blend_materials. Default: 0.5." },
                 ["lod_levels"] = new { type = "integer", description = "LOD level count. Used by: configure." },
-                ["subdivision"] = new { type = "integer", description = "Subdivision factor. Used by: configure." }
+                ["subdivision"] = new { type = "integer", description = "Subdivision factor. Used by: configure." },
+                ["definition"] = new { type = "string", description = "ClutterDefinition asset path. Used by: configure_clutter." },
+                ["bounds_min"] = new { type = "string", description = "Bounds minimum as 'x,y,z'. Used by: regenerate_clutter (partial rebuild)." },
+                ["bounds_max"] = new { type = "string", description = "Bounds maximum as 'x,y,z'. Used by: regenerate_clutter (partial rebuild)." }
+            },
+            required = new[] { "action" },
+            additionalProperties = false
+        }
+    };
+
+    // ── Tool 20: trace ──────────────────────────────────────────────
+
+    internal static readonly object Trace = new
+    {
+        name = "trace",
+        description = "Cast rays and sweep volumes to probe the scene spatially. Use 'ray' for a single raycast from A to B — returns what it hits (object, position, normal, surface). Use 'sphere_cast' or 'box_cast' to sweep a volume. Use 'sample_grid' to cast a grid of downward rays across an area — the primary spatial awareness tool for mapping terrain, finding obstacles, and understanding layouts. Use 'multi_ray' for arbitrary batches of custom rays (max 256). All actions support tag filtering to include/exclude specific object types.",
+        annotations = new { readOnlyHint = true },
+        inputSchema = new
+        {
+            type = "object",
+            properties = new Dictionary<string, object>
+            {
+                ["action"] = new { type = "string", description = "The operation to perform.", @enum = new[] { "ray", "sphere_cast", "box_cast", "sample_grid", "multi_ray" } },
+                ["from"] = new { type = "string", description = "Ray origin as 'x,y,z'. Required for: ray, sphere_cast, box_cast." },
+                ["to"] = new { type = "string", description = "Ray end point as 'x,y,z'. Required for: ray, sphere_cast, box_cast." },
+                ["radius"] = new { type = "number", description = "Sphere radius. Required for: sphere_cast." },
+                ["size"] = new { type = "string", description = "Box extents as 'x,y,z'. Required for: box_cast." },
+                ["center"] = new { type = "string", description = "Grid center as 'x,y,z' — rays cast downward from this Z. Required for: sample_grid." },
+                ["area_size"] = new { type = "string", description = "Grid XY spread as 'x,y'. Required for: sample_grid." },
+                ["samples_x"] = new { type = "integer", description = "Grid columns (1-32). Used by: sample_grid. Default: 10." },
+                ["samples_y"] = new { type = "integer", description = "Grid rows (1-32). Used by: sample_grid. Default: 10." },
+                ["max_depth"] = new { type = "number", description = "Max downward ray distance. Used by: sample_grid. Default: 5000." },
+                ["rays"] = new
+                {
+                    type = "array",
+                    description = "Array of ray definitions for multi_ray. Each: {from: 'x,y,z', to: 'x,y,z'}. Max 256.",
+                    items = new
+                    {
+                        type = "object",
+                        properties = new Dictionary<string, object>
+                        {
+                            ["from"] = new { type = "string", description = "Ray origin as 'x,y,z'." },
+                            ["to"] = new { type = "string", description = "Ray end as 'x,y,z'." }
+                        }
+                    }
+                },
+                ["tags"] = new { type = "string", description = "Comma-separated tags to require on hit objects. Used by: all actions." },
+                ["ignore_tags"] = new { type = "string", description = "Comma-separated tags to exclude. Used by: all actions." },
+                ["ignore_id"] = new { type = "string", description = "GameObject GUID to skip. Used by: all actions." },
+                ["hit_triggers"] = new { type = "boolean", description = "Include trigger colliders. Used by: all actions. Default: false." }
+            },
+            required = new[] { "action" },
+            additionalProperties = false
+        }
+    };
+
+    // ── Tool 21: player ─────────────────────────────────────────────
+
+    internal static readonly object Player = new
+    {
+        name = "player",
+        description = "Create and configure PlayerController components for character setup. Use 'create' to add a PlayerController with optional body model. Configure in groups: 'configure_movement' (speeds, acceleration, jump), 'configure_camera' (first/third person, offsets, sensitivity), 'configure_body' (height, radius, mass, collision tags), 'configure_interaction' (use/press system, reach distance). Each configure action only sets properties you provide — omitted properties keep their current values.",
+        inputSchema = new
+        {
+            type = "object",
+            properties = new Dictionary<string, object>
+            {
+                ["action"] = new { type = "string", description = "The operation to perform.", @enum = new[] { "create", "configure_movement", "configure_camera", "configure_body", "configure_interaction" } },
+                ["id"] = new { type = "string", description = "Target GameObject GUID. Required for: all configure actions. Optional for: create (creates new GO if omitted)." },
+                ["name"] = new { type = "string", description = "Object name. Used by: create." },
+                ["position"] = new { type = "string", description = "Position as 'x,y,z'. Used by: create." },
+                ["body_model"] = new { type = "string", description = "Model path for the body renderer. Used by: create." },
+                ["walk_speed"] = new { type = "number", description = "Walking speed. Used by: configure_movement." },
+                ["run_speed"] = new { type = "number", description = "Running speed. Used by: configure_movement." },
+                ["ducked_speed"] = new { type = "number", description = "Crouching speed. Used by: configure_movement." },
+                ["jump_speed"] = new { type = "number", description = "Jump velocity. Used by: configure_movement." },
+                ["acceleration_time"] = new { type = "number", description = "Seconds to accelerate. Used by: configure_movement." },
+                ["deacceleration_time"] = new { type = "number", description = "Seconds to decelerate. Used by: configure_movement." },
+                ["air_friction"] = new { type = "number", description = "Air friction factor. Used by: configure_movement." },
+                ["brake_power"] = new { type = "number", description = "Ground braking friction. Used by: configure_movement." },
+                ["run_by_default"] = new { type = "boolean", description = "Run by default, hold to walk. Used by: configure_movement." },
+                ["third_person"] = new { type = "boolean", description = "Third person camera. Used by: configure_camera." },
+                ["hide_body_in_first_person"] = new { type = "boolean", description = "Hide body model in FP. Used by: configure_camera." },
+                ["camera_offset"] = new { type = "string", description = "Camera offset as 'x,y,z'. Used by: configure_camera." },
+                ["eye_distance_from_top"] = new { type = "number", description = "Eye height from top. Used by: configure_camera." },
+                ["pitch_clamp"] = new { type = "number", description = "Max pitch degrees. Used by: configure_camera." },
+                ["look_sensitivity"] = new { type = "number", description = "Look sensitivity. Used by: configure_camera." },
+                ["use_fov_from_preferences"] = new { type = "boolean", description = "Use player FOV pref. Used by: configure_camera." },
+                ["body_height"] = new { type = "number", description = "Standing height. Used by: configure_body." },
+                ["body_radius"] = new { type = "number", description = "Capsule radius. Used by: configure_body." },
+                ["body_mass"] = new { type = "number", description = "Mass in kg. Used by: configure_body." },
+                ["ducked_height"] = new { type = "number", description = "Crouching height. Used by: configure_body." },
+                ["collision_tags"] = new { type = "string", description = "Comma-separated collision tags. Used by: configure_body." },
+                ["enable_pressing"] = new { type = "boolean", description = "Allow use/press. Used by: configure_interaction." },
+                ["use_button"] = new { type = "string", description = "Button name for use. Used by: configure_interaction." },
+                ["reach_length"] = new { type = "number", description = "Interaction reach. Used by: configure_interaction." }
+            },
+            required = new[] { "action" },
+            additionalProperties = false
+        }
+    };
+
+    // ── Tool 22: networking ─────────────────────────────────────────
+
+    internal static readonly object Networking = new
+    {
+        name = "networking",
+        description = "Configure multiplayer networking in the editor. Use 'add_helper' to place a NetworkHelper component that creates lobbies and spawns player prefabs. Use 'configure_object' to set per-object network flags (sync options, ownership, orphan behavior). Use 'get_status' to inspect networking state — pass an 'id' for a single object, or omit for a scene-wide scan of all networked objects.",
+        inputSchema = new
+        {
+            type = "object",
+            properties = new Dictionary<string, object>
+            {
+                ["action"] = new { type = "string", description = "The operation to perform.", @enum = new[] { "add_helper", "configure_object", "get_status" } },
+                ["id"] = new { type = "string", description = "Target GameObject GUID. Required for: configure_object. Optional for: add_helper (creates new GO if omitted), get_status (scans scene if omitted)." },
+                ["name"] = new { type = "string", description = "Object name. Used by: add_helper." },
+                ["position"] = new { type = "string", description = "Position as 'x,y,z'. Used by: add_helper." },
+                ["player_prefab"] = new { type = "string", description = "Player prefab path. Used by: add_helper." },
+                ["spawn_point_ids"] = new { type = "string", description = "Comma-separated spawn point GUIDs. Used by: add_helper." },
+                ["start_server"] = new { type = "boolean", description = "Create a server. Used by: add_helper. Default: true." },
+                ["flags"] = new { type = "string", description = "Comma-separated network flags: no_interpolation, no_position_sync, no_rotation_sync, no_scale_sync, no_transform_sync. Used by: configure_object." },
+                ["owner_transfer"] = new { type = "string", description = "Ownership transfer mode: none, request, takeover. Used by: configure_object." },
+                ["orphaned_mode"] = new { type = "string", description = "Orphan behavior: destroy, host, none. Used by: configure_object." },
+                ["always_transmit"] = new { type = "boolean", description = "Always send updates. Used by: configure_object." },
+                ["interpolation"] = new { type = "boolean", description = "Interpolate transform. Used by: configure_object." },
+                ["offset"] = new { type = "integer", description = "Pagination offset. Used by: get_status (scene scan). Default: 0." },
+                ["limit"] = new { type = "integer", description = "Max results. Used by: get_status (scene scan). Default: 50." }
             },
             required = new[] { "action" },
             additionalProperties = false
