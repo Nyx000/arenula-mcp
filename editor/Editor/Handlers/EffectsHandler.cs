@@ -395,7 +395,12 @@ internal static class EffectsHandler
         if ( !string.IsNullOrEmpty( spritePath ) )
         {
             var sprite = ResourceLibrary.Get<Sprite>( spritePath );
-            if ( sprite != null ) sr.Sprite = sprite;
+            if ( sprite == null )
+                return HandlerBase.Error(
+                    $"Sprite not found at '{spritePath}'.",
+                    "create",
+                    "Sprite assets must be indexed. User-created sprites belong under 'Assets/'; paths are relative to Assets/." );
+            sr.Sprite = sprite;
         }
 
         var sizeStr = HandlerBase.GetString( args, "size" );
@@ -565,7 +570,12 @@ internal static class EffectsHandler
         if ( !string.IsNullOrEmpty( spritePath ) )
         {
             var sprite = ResourceLibrary.Get<Sprite>( spritePath );
-            if ( sprite != null ) sr.Sprite = sprite;
+            if ( sprite == null )
+                return HandlerBase.Error(
+                    $"Sprite not found at '{spritePath}'.",
+                    "configure_sprite",
+                    "Sprite assets must be indexed. User-created sprites belong under 'Assets/'; paths are relative to Assets/." );
+            sr.Sprite = sprite;
         }
 
         var sizeStr = HandlerBase.GetString( args, "size" );

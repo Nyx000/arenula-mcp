@@ -62,11 +62,13 @@ internal static class NetworkingHandler
         if ( !string.IsNullOrEmpty( prefabPath ) )
         {
             var prefabFile = ResourceLibrary.Get<PrefabFile>( prefabPath );
-            if ( prefabFile != null )
-            {
-                var prefabScene = SceneUtility.GetPrefabScene( prefabFile );
-                nh.PlayerPrefab = prefabScene;
-            }
+            if ( prefabFile == null )
+                return HandlerBase.Error(
+                    $"PrefabFile not found at '{prefabPath}'.",
+                    "add_helper",
+                    "Prefabs must be indexed. User-created prefabs belong under 'Assets/'; path is relative to Assets/." );
+            var prefabScene = SceneUtility.GetPrefabScene( prefabFile );
+            nh.PlayerPrefab = prefabScene;
         }
 
         var spawnIds = HandlerBase.GetString( args, "spawn_point_ids" );

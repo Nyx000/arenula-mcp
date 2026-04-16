@@ -105,9 +105,8 @@ internal static class TerrainHandler
         terrain.TerrainSize = size;
         terrain.TerrainHeight = height;
 
-        // Initialize terrain rendering + physics collider from storage
+        // Initialize terrain rendering from storage
         terrain.Create();
-        terrain.RebuildImmediately();
 
         return HandlerBase.Success( new
         {
@@ -1269,9 +1268,6 @@ internal static class TerrainHandler
             Log.Warning( $"[terrain] SyncCPUTexture skipped: {ex.Message}" );
         }
 
-        // Rebuild physics collider from updated heightmap
-        terrain.RebuildImmediately();
-
         // Update materials buffer
         terrain.UpdateMaterialsBuffer();
 
@@ -1427,7 +1423,12 @@ internal static class TerrainHandler
         if ( !string.IsNullOrEmpty( defPath ) )
         {
             var def = ResourceLibrary.Get<Sandbox.Clutter.ClutterDefinition>( defPath );
-            if ( def != null ) clutter.Clutter = def;
+            if ( def == null )
+                return HandlerBase.Error(
+                    $"ClutterDefinition not found at '{defPath}'.",
+                    "configure_clutter",
+                    "User-created .clutter files must live under 'Assets/'. Path is relative to Assets/ (e.g. 'volcano_ground.clutter' for Assets/volcano_ground.clutter, no 'Assets/' prefix)." );
+            clutter.Clutter = def;
         }
 
         if ( args.TryGetProperty( "seed", out var sEl ) && sEl.ValueKind == JsonValueKind.Number )

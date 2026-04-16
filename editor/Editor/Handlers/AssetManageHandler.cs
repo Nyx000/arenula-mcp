@@ -55,6 +55,16 @@ internal static class AssetManageHandler
         if ( string.IsNullOrEmpty( path ) )
             return HandlerBase.Error( "Missing required 'path' parameter.", "create" );
 
+        // Guard: user-created assets must live under 'Assets/' to be indexed by ResourceLibrary.
+        // Files elsewhere appear in the Asset Browser but ResourceLibrary.Get returns null for them,
+        // which breaks any downstream tool that tries to load the resource (see 2026-04-16 clutter debug).
+        var normalizedPath = path.Replace( '\\', '/' ).TrimStart( '/' );
+        if ( !normalizedPath.StartsWith( "Assets/", StringComparison.OrdinalIgnoreCase ) )
+            return HandlerBase.Error(
+                $"Path '{path}' is not under 'Assets/'. User-created assets outside 'Assets/' are not indexed by ResourceLibrary, so tools that load the resource will silently get null.",
+                "create",
+                "Use a path like 'Assets/name.ext' or 'Assets/subfolder/name.ext' instead." );
+
         // Determine the correct file extension for the type
         // Common s&box asset types: Material (.vmat), SoundEvent (.sound),
         // GameResource subtypes (.asset), etc.

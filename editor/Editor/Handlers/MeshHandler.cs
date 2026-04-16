@@ -1031,11 +1031,14 @@ internal static class MeshHandler
         if ( !string.IsNullOrEmpty( defPath ) )
         {
             var asset = AssetSystem.FindByPath( defPath );
-            if ( asset != null )
-            {
-                var def = asset.LoadResource<ClutterDefinition>();
-                if ( def != null ) clutter.Clutter = def;
-            }
+            if ( asset == null )
+                throw new InvalidOperationException(
+                    $"ClutterDefinition asset not found at '{defPath}'. User-created .clutter files must live under 'Assets/' (path relative to Assets/, no 'Assets/' prefix)." );
+            var def = asset.LoadResource<ClutterDefinition>();
+            if ( def == null )
+                throw new InvalidOperationException(
+                    $"Asset at '{defPath}' exists but is not a ClutterDefinition or failed to load." );
+            clutter.Clutter = def;
         }
 
         return HandlerBase.Success( new

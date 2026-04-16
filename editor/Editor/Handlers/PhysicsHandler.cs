@@ -187,16 +187,15 @@ internal static class PhysicsHandler
         if ( !string.IsNullOrEmpty( surfaceStr ) )
         {
             // Surface is set via the Surface property (resource path)
-            try
+            var surfProp = collider.GetType().GetProperty( "Surface" );
+            if ( surfProp != null )
             {
-                var surfProp = collider.GetType().GetProperty( "Surface" );
-                if ( surfProp != null )
-                {
-                    var surface = ResourceLibrary.Get<Surface>( surfaceStr );
-                    if ( surface != null ) surfProp.SetValue( collider, surface );
-                }
+                var surface = ResourceLibrary.Get<Surface>( surfaceStr );
+                if ( surface == null )
+                    throw new InvalidOperationException(
+                        $"Surface not found at '{surfaceStr}'. Surface resources must be indexed — user-created .surface assets must live under 'Assets/'." );
+                surfProp.SetValue( collider, surface );
             }
-            catch { }
         }
 
         if ( args.TryGetProperty( "friction", out var frEl ) && frEl.ValueKind == JsonValueKind.Number )
@@ -425,18 +424,30 @@ internal static class PhysicsHandler
 
         Joint joint = type.ToLowerInvariant() switch
         {
-            "ball"   => go.Components.Create<BallJoint>(),
-            "hinge"  => go.Components.Create<HingeJoint>(),
-            "slider" => go.Components.Create<SliderJoint>(),
-            "spring" => go.Components.Create<SpringJoint>(),
-            "wheel"  => go.Components.Create<WheelJoint>(),
-            _        => go.Components.Create<FixedJoint>()
+            "ball"    => go.Components.Create<BallJoint>(),
+            "hinge"   => go.Components.Create<HingeJoint>(),
+            "slider"  => go.Components.Create<SliderJoint>(),
+            "spring"  => go.Components.Create<SpringJoint>(),
+            "wheel"   => go.Components.Create<WheelJoint>(),
+            "upright" => go.Components.Create<UprightJoint>(),
+            _         => go.Components.Create<FixedJoint>()
         };
 
         if ( args.TryGetProperty( "break_force", out var bfEl ) && bfEl.ValueKind == JsonValueKind.Number )
             joint.BreakForce = bfEl.GetSingle();
         if ( args.TryGetProperty( "break_torque", out var btEl ) && btEl.ValueKind == JsonValueKind.Number )
             joint.BreakTorque = btEl.GetSingle();
+
+        // UprightJoint-specific properties
+        if ( joint is UprightJoint uj )
+        {
+            if ( args.TryGetProperty( "hertz", out var hzEl ) && hzEl.ValueKind == JsonValueKind.Number )
+                uj.Hertz = hzEl.GetSingle();
+            if ( args.TryGetProperty( "damping_ratio", out var drEl ) && drEl.ValueKind == JsonValueKind.Number )
+                uj.DampingRatio = drEl.GetSingle();
+            if ( args.TryGetProperty( "max_torque", out var mtEl ) && mtEl.ValueKind == JsonValueKind.Number )
+                uj.MaxTorque = mtEl.GetSingle();
+        }
 
         // Link body_a
         var bodyAGo = SceneHelpers.FindByIdOrThrow( scene, bodyA, "create_joint" );
