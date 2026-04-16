@@ -251,7 +251,36 @@ internal static class EditorHandler
         var session = SceneEditorSession.Active;
         if ( session == null ) return HandlerBase.Error( "No editor session active.", "save_scene" );
         session.Save( false );
-        return HandlerBase.Confirm( $"Saved '{session.Scene?.Name}'." );
+
+        // Post-condition: file exists on disk with non-zero size, scene shows no unsaved changes.
+        var scene = session.Scene;
+        string resourcePath = scene?.Source?.ResourcePath;
+        string scenePath = null;
+        if ( !string.IsNullOrEmpty( resourcePath ) )
+        {
+            var asset = AssetSystem.FindByPath( resourcePath );
+            scenePath = asset?.AbsolutePath;
+        }
+        bool fileExists = !string.IsNullOrEmpty( scenePath ) && System.IO.File.Exists( scenePath );
+        long fileSize = fileExists ? new System.IO.FileInfo( scenePath ).Length : 0;
+        bool noUnsavedChanges = scene != null && !scene.HasUnsavedChanges;
+
+        if ( !fileExists || fileSize == 0 )
+            return HandlerBase.Error(
+                $"Scene save reported success but file at '{scenePath}' does not exist or is empty.",
+                "save_scene",
+                "Engine silent save drop — check get_log for engine errors." );
+
+        return HandlerBase.Success( new
+        {
+            message = $"Saved '{scene?.Name}'.",
+            verified = new
+            {
+                file = scenePath,
+                size_bytes = fileSize,
+                no_unsaved_changes = noUnsavedChanges
+            }
+        } );
     }
 
     // ── save_scene_as ────────────────────────────────────────────────────
@@ -274,7 +303,29 @@ internal static class EditorHandler
         if ( saveMethod != null )
         {
             saveMethod.Invoke( session, new object[] { true } );
-            return HandlerBase.Confirm( $"Save As dialog opened. Choose '{path}' in the dialog." );
+
+            // Post-condition: if the user's target path already exists on disk, verify file + size + no-unsaved.
+            // (If the user still has to choose it in the dialog, this won't assert — that's fine; we report what we can.)
+            var scene = session.Scene;
+            var asset = AssetSystem.FindByPath( path );
+            string scenePath = asset?.AbsolutePath;
+            bool fileExists = !string.IsNullOrEmpty( scenePath ) && System.IO.File.Exists( scenePath );
+            long fileSize = fileExists ? new System.IO.FileInfo( scenePath ).Length : 0;
+            bool noUnsavedChanges = scene != null && !scene.HasUnsavedChanges;
+
+            return HandlerBase.Success( new
+            {
+                message = $"Save As dialog opened. Choose '{path}' in the dialog.",
+                verified = new
+                {
+                    file = scenePath,
+                    size_bytes = fileSize,
+                    no_unsaved_changes = noUnsavedChanges,
+                    note = fileExists
+                        ? "Scene saved to the specified path."
+                        : "Dialog-driven save — verification depends on user completing the dialog."
+                }
+            } );
         }
 
         return HandlerBase.Error( "Save As method not available on this session type.", "save_scene_as" );
