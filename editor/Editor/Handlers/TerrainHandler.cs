@@ -105,6 +105,10 @@ internal static class TerrainHandler
         terrain.TerrainSize = size;
         terrain.TerrainHeight = height;
 
+        // Initialize terrain rendering + physics collider from storage
+        terrain.Create();
+        terrain.RebuildImmediately();
+
         return HandlerBase.Success( new
         {
             id = go.Id.ToString(),
@@ -1264,6 +1268,9 @@ internal static class TerrainHandler
         {
             Log.Warning( $"[terrain] SyncCPUTexture skipped: {ex.Message}" );
         }
+
+        // Rebuild physics collider from updated heightmap
+        terrain.RebuildImmediately();
 
         // Update materials buffer
         terrain.UpdateMaterialsBuffer();
