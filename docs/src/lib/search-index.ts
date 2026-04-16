@@ -102,7 +102,9 @@ async function doInit(): Promise<void> {
   categories = parsed.categories
   initialized = true
 
+  let added = 0
   for (const page of pages) {
+    if (index.has(page.url)) continue
     index.add({
       id: page.url,
       title: page.title,
@@ -111,9 +113,10 @@ async function doInit(): Promise<void> {
       category: page.category,
       enriched: false,
     })
+    added++
   }
 
-  console.error(`[arenula-docs] Indexed ${pages.length} pages from llms.txt (title-only)`)
+  console.error(`[arenula-docs] Indexed ${added} pages from llms.txt (title-only)`)
 }
 
 /**
