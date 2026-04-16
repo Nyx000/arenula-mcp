@@ -30,5 +30,15 @@ export const GetPageInput = z.object({
     .describe('Max content length in characters'),
 })
 
+export const ListDocsInput = z.object({
+  category: z
+    .string()
+    .optional()
+    .describe('Filter by category (e.g. "Scene", "Graphics", "Networking")'),
+  limit: z.number().min(1).max(100).default(50).describe('Max results'),
+  offset: z.number().min(0).default(0).describe('Pagination offset'),
+})
+
 export type SearchDocsParams = z.infer<typeof SearchDocsInput>
 export type GetPageParams = z.infer<typeof GetPageInput>
+export type ListDocsParams = z.infer<typeof ListDocsInput>
