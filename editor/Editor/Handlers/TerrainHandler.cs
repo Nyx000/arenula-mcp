@@ -42,8 +42,11 @@ internal static class TerrainHandler
             "import_heightmap"  => ImportHeightmap( scene, args ),
             "export_heightmap"  => ExportHeightmap( scene, args ),
             "sync"              => Sync( scene, args ),
+            "configure_clutter" => ConfigureClutter( scene, args ),
+            "regenerate_clutter" => RegenerateClutter( scene, args ),
+            "clear_clutter"     => ClearClutter( scene, args ),
             _                   => HandlerBase.Error( $"Unknown action '{action}' for tool 'terrain'.", action,
-                "Valid actions: create, configure, get_info, get_height, get_height_region, set_height, noise, erode, stamp, add_material, remove_material, get_material_at, blend_materials, set_hole, paint_material, import_heightmap, export_heightmap, sync" )
+                "Valid actions: create, configure, get_info, get_height, get_height_region, set_height, noise, erode, stamp, add_material, remove_material, get_material_at, blend_materials, set_hole, paint_material, import_heightmap, export_heightmap, sync, configure_clutter, regenerate_clutter, clear_clutter" )
         };
     }
 
@@ -1398,6 +1401,88 @@ internal static class TerrainHandler
             frequency *= lacunarity;
         }
         return total / maxValue;
+    }
+
+    // ── configure_clutter ───────────────────────────────────────────
+
+    private static object ConfigureClutter( Scene scene, JsonElement args )
+    {
+        var id = HandlerBase.GetString( args, "id" );
+        if ( string.IsNullOrEmpty( id ) )
+            return HandlerBase.Error( "Missing required 'id' parameter.", "configure_clutter" );
+
+        var go = SceneHelpers.FindByIdOrThrow( scene, id, "configure_clutter" );
+        var clutter = go.Components.Get<Sandbox.Clutter.ClutterComponent>();
+        if ( clutter == null )
+            return HandlerBase.Error( $"No ClutterComponent found on '{go.Name}'.", "configure_clutter" );
+
+        var defPath = HandlerBase.GetString( args, "definition" );
+        if ( !string.IsNullOrEmpty( defPath ) )
+        {
+            var def = ResourceLibrary.Get<Sandbox.Clutter.ClutterDefinition>( defPath );
+            if ( def != null ) clutter.Clutter = def;
+        }
+
+        if ( args.TryGetProperty( "seed", out var sEl ) && sEl.ValueKind == JsonValueKind.Number )
+            clutter.Seed = sEl.GetInt32();
+
+        var modeStr = HandlerBase.GetString( args, "mode" );
+        if ( !string.IsNullOrEmpty( modeStr ) )
+        {
+            if ( Enum.TryParse<Sandbox.Clutter.ClutterComponent.ClutterMode>( modeStr, true, out var cm ) )
+                clutter.Mode = cm;
+        }
+
+        return HandlerBase.Confirm( $"Configured ClutterComponent on '{go.Name}': seed={clutter.Seed}, mode={clutter.Mode}." );
+    }
+
+    // ── regenerate_clutter ──────────────────────────────────────────
+
+    private static object RegenerateClutter( Scene scene, JsonElement args )
+    {
+        var id = HandlerBase.GetString( args, "id" );
+        if ( string.IsNullOrEmpty( id ) )
+            return HandlerBase.Error( "Missing required 'id' parameter.", "regenerate_clutter" );
+
+        var go = SceneHelpers.FindByIdOrThrow( scene, id, "regenerate_clutter" );
+        var clutter = go.Components.Get<Sandbox.Clutter.ClutterComponent>();
+        if ( clutter == null )
+            return HandlerBase.Error( $"No ClutterComponent found on '{go.Name}'.", "regenerate_clutter" );
+
+        var minStr = HandlerBase.GetString( args, "bounds_min" );
+        var maxStr = HandlerBase.GetString( args, "bounds_max" );
+
+        if ( !string.IsNullOrEmpty( minStr ) && !string.IsNullOrEmpty( maxStr ) )
+        {
+            var min = HandlerBase.ParseVector3( minStr );
+            var max = HandlerBase.ParseVector3( maxStr );
+            clutter.InvalidateTilesInBounds( new BBox( min, max ) );
+            return HandlerBase.Confirm( $"Regenerated clutter tiles in bounds on '{go.Name}'." );
+        }
+
+        clutter.Generate();
+        return HandlerBase.Confirm( $"Regenerated all clutter on '{go.Name}'." );
+    }
+
+    // ── clear_clutter ───────────────────────────────────────────────
+
+    private static object ClearClutter( Scene scene, JsonElement args )
+    {
+        var id = HandlerBase.GetString( args, "id" );
+        if ( string.IsNullOrEmpty( id ) )
+            return HandlerBase.Error( "Missing required 'id' parameter.", "clear_clutter" );
+
+        var go = SceneHelpers.FindByIdOrThrow( scene, id, "clear_clutter" );
+        var clutter = go.Components.Get<Sandbox.Clutter.ClutterComponent>();
+        if ( clutter == null )
+            return HandlerBase.Error( $"No ClutterComponent found on '{go.Name}'.", "clear_clutter" );
+
+        if ( clutter.Infinite )
+            clutter.ClearInfinite();
+        else
+            clutter.Clear();
+
+        return HandlerBase.Confirm( $"Cleared all clutter on '{go.Name}'." );
     }
 
     // ── Helpers ───────────────────────────────────────────────────────
