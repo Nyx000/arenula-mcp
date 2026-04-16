@@ -75,10 +75,7 @@ internal static class PlayerHandler
         {
             pc.CreateBodyRenderer();
             if ( pc.Renderer != null )
-            {
-                var model = Model.Load( bodyModel );
-                if ( model != null ) pc.Renderer.Model = model;
-            }
+                pc.Renderer.Model = HandlerBase.RequireModel( bodyModel, "create_player" );
         }
 
         return HandlerBase.Success( new
