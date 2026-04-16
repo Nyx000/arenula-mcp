@@ -40,6 +40,8 @@ internal static class NetworkingHandler
         if ( scene == null )
             return HandlerBase.Error( "No active scene.", "add_helper" );
 
+        var warnings = new List<object>();
+
         var id = HandlerBase.GetString( args, "id" );
         GameObject go;
 
@@ -75,10 +77,18 @@ internal static class NetworkingHandler
         if ( !string.IsNullOrEmpty( spawnIds ) )
         {
             nh.SpawnPoints ??= new List<GameObject>();
+            int idx = 0;
             foreach ( var spId in spawnIds.Split( ',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries ) )
             {
                 var spGo = SceneHelpers.FindById( scene, spId );
-                if ( spGo != null ) nh.SpawnPoints.Add( spGo );
+                if ( spGo != null )
+                    nh.SpawnPoints.Add( spGo );
+                else
+                    warnings.Add( HandlerBase.Warning(
+                        $"GameObject '{spId}' not found; skipped.",
+                        field: $"spawn_point_ids[{idx}]",
+                        suggestion: "Verify the GUID via 'scene.find'." ) );
+                idx++;
             }
         }
 
@@ -88,7 +98,8 @@ internal static class NetworkingHandler
             id = go.Id.ToString(),
             component_id = nh.Id.ToString(),
             start_server = nh.StartServer,
-            spawn_points = nh.SpawnPoints?.Count ?? 0
+            spawn_points = nh.SpawnPoints?.Count ?? 0,
+            warnings = warnings.Count > 0 ? warnings : null
         } );
     }
 
@@ -127,18 +138,12 @@ internal static class NetworkingHandler
         }
 
         var ownerTransfer = HandlerBase.GetString( args, "owner_transfer" );
-        if ( !string.IsNullOrEmpty( ownerTransfer ) )
-        {
-            if ( Enum.TryParse<OwnerTransfer>( ownerTransfer, true, out var ot ) )
-                net.SetOwnerTransfer( ot );
-        }
+        var otParsed = HandlerBase.ResolveEnum<OwnerTransfer>( ownerTransfer, "owner_transfer", "configure_object" );
+        if ( otParsed.HasValue ) net.SetOwnerTransfer( otParsed.Value );
 
         var orphanedMode = HandlerBase.GetString( args, "orphaned_mode" );
-        if ( !string.IsNullOrEmpty( orphanedMode ) )
-        {
-            if ( Enum.TryParse<NetworkOrphaned>( orphanedMode, true, out var no ) )
-                net.SetOrphanedMode( no );
-        }
+        var noParsed = HandlerBase.ResolveEnum<NetworkOrphaned>( orphanedMode, "orphaned_mode", "configure_object" );
+        if ( noParsed.HasValue ) net.SetOrphanedMode( noParsed.Value );
 
         if ( args.TryGetProperty( "always_transmit", out var atEl ) &&
              ( atEl.ValueKind == JsonValueKind.True || atEl.ValueKind == JsonValueKind.False ) )
