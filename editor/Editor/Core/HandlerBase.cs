@@ -273,6 +273,31 @@ internal static class HandlerBase
         return RequireMaterial( path, action );
     }
 
+    // ── Enum parsing helpers ──────────────────────────────────────────
+    // RequireEnum: errors with valid-values list if value is invalid or empty.
+    // ResolveEnum: returns null if value is null/empty; errors if provided-but-invalid.
+
+    internal static TEnum RequireEnum<TEnum>( string value, string paramName, string action )
+        where TEnum : struct, Enum
+    {
+        if ( string.IsNullOrEmpty( value ) )
+            throw new InvalidOperationException( $"Missing required '{paramName}' for '{action}'." );
+        if ( !Enum.TryParse<TEnum>( value, ignoreCase: true, out var result ) )
+        {
+            var valid = string.Join( ", ", Enum.GetNames<TEnum>() );
+            throw new InvalidOperationException(
+                $"Invalid {paramName} '{value}' for '{action}'. Valid values: {valid}." );
+        }
+        return result;
+    }
+
+    internal static TEnum? ResolveEnum<TEnum>( string value, string paramName, string action )
+        where TEnum : struct, Enum
+    {
+        if ( string.IsNullOrEmpty( value ) ) return null;
+        return RequireEnum<TEnum>( value, paramName, action );
+    }
+
     // ── Project root resolution ───────────────────────────────────────
 
     /// <summary>
