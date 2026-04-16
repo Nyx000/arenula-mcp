@@ -8,6 +8,16 @@ Designed following [Anthropic's MCP best practices](https://www.anthropic.com/en
 
 *Arenula* — Latin for "grain of sand". One grain in the sandbox.
 
+## Response envelope
+
+Mutation tools return JSON with these fields:
+
+- **`message`** — short human-readable confirmation.
+- **`verified`** — (optional) read-back of state after the mutation, so callers can confirm the change actually stuck. E.g. after `component.add`: `{ "component_exists": true, "component_type": "ModelRenderer" }`. After `terrain.configure_clutter`: `{ "clutter_assigned": "volcano_ground", "seed": 42, "mode": "Infinite" }`. When this field is missing the caller should assume the mutation is unverified.
+- **`warnings`** — (optional) array of per-field partial-success notes, each `{ field, message, suggestion? }`. Used where the main operation succeeded but some sub-step was skipped — e.g. `networking.add_helper` with a mix of valid and invalid spawn-point IDs will return the helper wired up and a warning per bad ID.
+
+Errors still return the standard `{ error, action, suggestion }` body with `isError: true`. Any user-facing value that can't be resolved to a real engine resource now errors with an actionable suggestion rather than silently no-op'ing.
+
 ## Servers
 
 | Server | What it does | Runtime | Transport |
