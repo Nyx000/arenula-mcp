@@ -210,6 +210,69 @@ internal static class HandlerBase
         return w;
     }
 
+    // ── Resource resolution helpers ───────────────────────────────────
+    // RequireResource: errors if path is null/empty or resource not found.
+    // ResolveResource: returns null if path is null/empty; errors if provided-but-not-found.
+    // Both go through ResourceLibrary.Get<T> — works for any GameResource-derived type.
+
+    internal static T RequireResource<T>( string path, string action, string hint = null ) where T : Resource
+    {
+        if ( string.IsNullOrEmpty( path ) )
+            throw new InvalidOperationException( $"Missing required resource path for '{action}'." );
+        var res = ResourceLibrary.Get<T>( path );
+        if ( res == null )
+        {
+            var extra = hint != null ? $" {hint}" : "";
+            throw new InvalidOperationException(
+                $"{typeof(T).Name} not found at '{path}'.{extra} " +
+                "User-authored assets must live under 'Assets/'. Path is relative to Assets/ " +
+                "(e.g. 'rifle.weapon' for Assets/rifle.weapon, no 'Assets/' prefix)." );
+        }
+        return res;
+    }
+
+    internal static T ResolveResource<T>( string path, string action, string hint = null ) where T : Resource
+    {
+        if ( string.IsNullOrEmpty( path ) ) return null;
+        return RequireResource<T>( path, action, hint );
+    }
+
+    // Model and Material use their own static factories, not ResourceLibrary — separate helpers.
+
+    internal static Model RequireModel( string path, string action )
+    {
+        if ( string.IsNullOrEmpty( path ) )
+            throw new InvalidOperationException( $"Missing required model path for '{action}'." );
+        var m = Model.Load( path );
+        if ( m == null )
+            throw new InvalidOperationException(
+                $"Model not found at '{path}'. Check the .vmdl path is valid and the model is mounted or under Assets/." );
+        return m;
+    }
+
+    internal static Model ResolveModel( string path, string action )
+    {
+        if ( string.IsNullOrEmpty( path ) ) return null;
+        return RequireModel( path, action );
+    }
+
+    internal static Material RequireMaterial( string path, string action )
+    {
+        if ( string.IsNullOrEmpty( path ) )
+            throw new InvalidOperationException( $"Missing required material path for '{action}'." );
+        var m = Material.Load( path );
+        if ( m == null )
+            throw new InvalidOperationException(
+                $"Material not found at '{path}'. Check the .vmat path is valid and the material is mounted or under Assets/." );
+        return m;
+    }
+
+    internal static Material ResolveMaterial( string path, string action )
+    {
+        if ( string.IsNullOrEmpty( path ) ) return null;
+        return RequireMaterial( path, action );
+    }
+
     // ── Project root resolution ───────────────────────────────────────
 
     /// <summary>
