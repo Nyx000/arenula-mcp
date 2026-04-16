@@ -10,64 +10,76 @@ export interface FetchResult {
 }
 
 /**
- * Normalize any docs URL to a sbox.game raw .md URL.
- * Accepts:
- *   - sbox.game/dev/doc/... (with or without .md)
- *   - docs.facepunch.com/s/sbox-dev/doc/slug-HASH
+ * Normalize any docs URL to a sbox.game raw .md URL where possible.
  */
 function toMarkdownUrl(url: string): string {
-  // Already a raw .md URL on sbox.game
   if (url.startsWith(SBOX_BASE) && url.endsWith('.md')) return url
 
-  // sbox.game docs page without .md suffix
   if (url.startsWith(SBOX_BASE) && url.includes('/dev/doc/')) {
     return url.replace(/\/?$/, '.md')
   }
 
-  // Legacy docs.facepunch.com URL — extract slug, strip hash suffix
-  const fpMatch = url.match(/docs\.facepunch\.com\/s\/sbox-dev\/doc\/([a-z0-9-]+?)(?:-[A-Za-z0-9]{8,})?$/)
-  if (fpMatch) {
-    // Best-effort: the slug maps roughly to sbox.game paths but not 1:1.
-    // Return as-is and let the caller fall back to HTML fetch if .md 404s.
-    return url
-  }
-
+  // Legacy or unknown URLs — return as-is, fetchPage will try HTML fallback
   return url
 }
 
 /**
  * Extract a title from the first markdown heading, or fall back to the URL slug.
  */
-function extractTitle(markdown: string, url: string): string {
-  const headingMatch = markdown.match(/^#\s+(.+)$/m)
+function extractTitle(text: string, url: string): string {
+  const headingMatch = text.match(/^#\s+(.+)$/m)
   if (headingMatch) return headingMatch[1].trim()
 
-  // Derive from URL path
   const slug = url.replace(/\.md$/, '').split('/').pop() || 'Untitled'
   return slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+}
+
+/**
+ * Strip HTML tags and extract readable text. Targets content containers first,
+ * falls back to full body. No external dependencies.
+ */
+function stripHtml(html: string): string {
+  const containerMatch = html.match(
+    /<(?:article|main)[^>]*>([\s\S]*?)<\/(?:article|main)>/i
+  )
+  const raw = containerMatch ? containerMatch[1] : html
+
+  return raw
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/<style[\s\S]*?<\/style>/gi, '')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
 }
 
 export async function fetchPage(url: string): Promise<FetchResult> {
   const mdUrl = toMarkdownUrl(url)
 
-  // Try raw .md endpoint first (no HTML parsing needed)
-  if (mdUrl.startsWith(SBOX_BASE) && mdUrl.endsWith('.md')) {
-    const response = await fetch(mdUrl, {
-      headers: { 'User-Agent': USER_AGENT },
-      signal: AbortSignal.timeout(TIMEOUT),
-    })
+  // Try raw .md endpoint first
+  if (mdUrl.endsWith('.md') && mdUrl.startsWith(SBOX_BASE)) {
+    try {
+      const response = await fetch(mdUrl, {
+        headers: { 'User-Agent': USER_AGENT },
+        signal: AbortSignal.timeout(TIMEOUT),
+      })
 
-    if (response.ok) {
-      const markdown = (await response.text()).trim()
-      if (markdown) {
-        const title = extractTitle(markdown, mdUrl)
-        return { title, markdown, url: mdUrl }
+      if (response.ok) {
+        const text = (await response.text()).trim()
+        if (text && !text.trimStart().startsWith('<')) {
+          return { title: extractTitle(text, mdUrl), markdown: text, url: mdUrl }
+        }
       }
+    } catch {
+      // Fall through to original URL fetch
     }
   }
 
-  // Fallback: if the URL is still a legacy docs.facepunch.com page, fetch
-  // HTML and do minimal extraction (no cheerio/turndown — just grab text)
+  // Fetch the original URL
   const response = await fetch(url, {
     headers: { 'User-Agent': USER_AGENT },
     signal: AbortSignal.timeout(TIMEOUT),
@@ -79,14 +91,19 @@ export async function fetchPage(url: string): Promise<FetchResult> {
 
   const text = await response.text()
 
-  // If the response looks like markdown already (starts with # or no <html), use it directly
+  // If it looks like markdown, use directly
   if (!text.trimStart().startsWith('<')) {
-    const title = extractTitle(text, url)
-    return { title, markdown: text.trim(), url }
+    return { title: extractTitle(text, url), markdown: text.trim(), url }
+  }
+
+  // HTML fallback — strip tags and extract text
+  const stripped = stripHtml(text)
+  if (stripped.length > 50) {
+    return { title: extractTitle(stripped, url), markdown: stripped, url }
   }
 
   throw new Error(
-    `Could not fetch raw markdown for ${url}. ` +
+    `Could not extract content from ${url}. ` +
     `Use sbox.game/dev/doc/... URLs with .md suffix for best results.`
   )
 }
