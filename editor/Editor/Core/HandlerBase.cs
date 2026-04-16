@@ -298,6 +298,43 @@ internal static class HandlerBase
         return RequireEnum<TEnum>( value, paramName, action );
     }
 
+    // ── Path guards ───────────────────────────────────────────────────
+    // Enforce that user-authored asset paths are under 'Assets/' (the only indexed content root).
+
+    internal static void RequireAssetsPath( string path, string action )
+    {
+        if ( string.IsNullOrEmpty( path ) )
+            throw new InvalidOperationException( $"Missing required path for '{action}'." );
+        var normalized = path.Replace( '\\', '/' ).TrimStart( '/' );
+        if ( !normalized.StartsWith( "Assets/", StringComparison.OrdinalIgnoreCase ) )
+            throw new InvalidOperationException(
+                $"Path '{path}' is not under 'Assets/'. User-created assets outside 'Assets/' are not indexed " +
+                "by ResourceLibrary, so tools that load the resource will silently get null. " +
+                "Use a path like 'Assets/name.ext' or 'Assets/subfolder/name.ext'." );
+    }
+
+    // ── GameObject lookup helpers ─────────────────────────────────────
+    // Require: errors if id is null/empty or GameObject not found.
+    // Resolve: returns null if id is null/empty; errors if provided-but-not-found.
+
+    internal static GameObject RequireGameObjectById( Scene scene, string id, string action )
+    {
+        if ( string.IsNullOrEmpty( id ) )
+            throw new InvalidOperationException( $"Missing required GameObject id for '{action}'." );
+        var go = SceneHelpers.FindById( scene, id );
+        if ( go == null )
+            throw new InvalidOperationException(
+                $"GameObject '{id}' not found in the active scene. " +
+                "GUIDs can change on scene reload — call 'scene.summary' to refresh IDs." );
+        return go;
+    }
+
+    internal static GameObject ResolveGameObjectById( Scene scene, string id, string action )
+    {
+        if ( string.IsNullOrEmpty( id ) ) return null;
+        return RequireGameObjectById( scene, id, action );
+    }
+
     // ── Project root resolution ───────────────────────────────────────
 
     /// <summary>
