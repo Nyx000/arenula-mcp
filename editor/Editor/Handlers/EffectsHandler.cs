@@ -160,11 +160,7 @@ internal static class EffectsHandler
             beam.TargetPosition = HandlerBase.ParseVector3( targetPosStr );
 
         var targetId = HandlerBase.GetString( args, "target_id" );
-        if ( !string.IsNullOrEmpty( targetId ) )
-        {
-            var targetGo = SceneHelpers.FindById( scene, targetId );
-            if ( targetGo != null ) beam.TargetGameObject = targetGo;
-        }
+        beam.TargetGameObject = HandlerBase.ResolveGameObjectById( scene, targetId, "create_beam" );
 
         return HandlerBase.Success( new
         {
@@ -193,11 +189,7 @@ internal static class EffectsHandler
             rope.DampingFactor = dfEl.GetSingle();
 
         var attachId = HandlerBase.GetString( args, "attachment_id" );
-        if ( !string.IsNullOrEmpty( attachId ) )
-        {
-            var attachGo = SceneHelpers.FindById( scene, attachId );
-            if ( attachGo != null ) rope.Attachment = attachGo;
-        }
+        rope.Attachment = HandlerBase.ResolveGameObjectById( scene, attachId, "create_rope" );
 
         return HandlerBase.Success( new
         {
@@ -279,22 +271,16 @@ internal static class EffectsHandler
             {
                 var mr = go.Components.Create<ModelRenderer>();
                 var modelPath = HandlerBase.GetString( args, "model_path" );
-                if ( !string.IsNullOrEmpty( modelPath ) )
-                {
-                    var model = Model.Load( modelPath );
-                    if ( model != null ) mr.Model = model;
-                }
+                var resolvedModel = HandlerBase.ResolveModel( modelPath, "create_effect" );
+                if ( resolvedModel != null ) mr.Model = resolvedModel;
                 break;
             }
             case "skinned_model":
             {
                 var sk = go.Components.Create<SkinnedModelRenderer>();
                 var modelPath = HandlerBase.GetString( args, "model_path" );
-                if ( !string.IsNullOrEmpty( modelPath ) )
-                {
-                    var model = Model.Load( modelPath );
-                    if ( model != null ) sk.Model = model;
-                }
+                var resolvedModel = HandlerBase.ResolveModel( modelPath, "create_effect" );
+                if ( resolvedModel != null ) sk.Model = resolvedModel;
                 break;
             }
             case "screen_panel":
@@ -413,11 +399,8 @@ internal static class EffectsHandler
         }
 
         var billboard = HandlerBase.GetString( args, "billboard" );
-        if ( !string.IsNullOrEmpty( billboard ) )
-        {
-            if ( Enum.TryParse<SpriteRenderer.BillboardMode>( billboard, true, out var bm ) )
-                sr.Billboard = bm;
-        }
+        var bmParsed = HandlerBase.ResolveEnum<SpriteRenderer.BillboardMode>( billboard, "billboard", "create_sprite" );
+        if ( bmParsed.HasValue ) sr.Billboard = bmParsed.Value;
 
         if ( args.TryGetProperty( "lighting", out var litEl ) &&
              ( litEl.ValueKind == JsonValueKind.True || litEl.ValueKind == JsonValueKind.False ) )
@@ -463,8 +446,8 @@ internal static class EffectsHandler
         go.WorldPosition = position;
 
         var prop = go.Components.Create<Prop>();
-        var model = Model.Load( modelPath );
-        if ( model != null ) prop.Model = model;
+        var resolvedModel = HandlerBase.ResolveModel( modelPath, "create_prop" );
+        if ( resolvedModel != null ) prop.Model = resolvedModel;
 
         var tintStr = HandlerBase.GetString( args, "tint" );
         if ( !string.IsNullOrEmpty( tintStr ) )
@@ -519,18 +502,12 @@ internal static class EffectsHandler
             wp.InteractionRange = irEl.GetSingle();
 
         var hAlign = HandlerBase.GetString( args, "horizontal_align" );
-        if ( !string.IsNullOrEmpty( hAlign ) )
-        {
-            if ( Enum.TryParse<WorldPanel.HAlignment>( hAlign, true, out var ha ) )
-                wp.HorizontalAlign = ha;
-        }
+        var haParsed = HandlerBase.ResolveEnum<WorldPanel.HAlignment>( hAlign, "horizontal_align", "create_world_panel" );
+        if ( haParsed.HasValue ) wp.HorizontalAlign = haParsed.Value;
 
         var vAlign = HandlerBase.GetString( args, "vertical_align" );
-        if ( !string.IsNullOrEmpty( vAlign ) )
-        {
-            if ( Enum.TryParse<WorldPanel.VAlignment>( vAlign, true, out var va ) )
-                wp.VerticalAlign = va;
-        }
+        var vaParsed = HandlerBase.ResolveEnum<WorldPanel.VAlignment>( vAlign, "vertical_align", "create_world_panel" );
+        if ( vaParsed.HasValue ) wp.VerticalAlign = vaParsed.Value;
 
         return HandlerBase.Success( new
         {
@@ -588,11 +565,8 @@ internal static class EffectsHandler
         }
 
         var billboard = HandlerBase.GetString( args, "billboard" );
-        if ( !string.IsNullOrEmpty( billboard ) )
-        {
-            if ( Enum.TryParse<SpriteRenderer.BillboardMode>( billboard, true, out var bm ) )
-                sr.Billboard = bm;
-        }
+        var bmParsed = HandlerBase.ResolveEnum<SpriteRenderer.BillboardMode>( billboard, "billboard", "configure_sprite" );
+        if ( bmParsed.HasValue ) sr.Billboard = bmParsed.Value;
 
         if ( args.TryGetProperty( "lighting", out var litEl ) &&
              ( litEl.ValueKind == JsonValueKind.True || litEl.ValueKind == JsonValueKind.False ) )
@@ -616,11 +590,8 @@ internal static class EffectsHandler
             sr.StartingAnimationName = animation;
 
         var texFilter = HandlerBase.GetString( args, "texture_filter" );
-        if ( !string.IsNullOrEmpty( texFilter ) )
-        {
-            if ( Enum.TryParse<Sandbox.Rendering.FilterMode>( texFilter, true, out var fm ) )
-                sr.TextureFilter = fm;
-        }
+        var fmParsed = HandlerBase.ResolveEnum<Sandbox.Rendering.FilterMode>( texFilter, "texture_filter", "configure_sprite" );
+        if ( fmParsed.HasValue ) sr.TextureFilter = fmParsed.Value;
 
         if ( args.TryGetProperty( "depth_feather", out var dfEl ) && dfEl.ValueKind == JsonValueKind.Number )
             sr.DepthFeather = dfEl.GetSingle();
@@ -659,8 +630,8 @@ internal static class EffectsHandler
         var modelPath = HandlerBase.GetString( args, "model" );
         if ( !string.IsNullOrEmpty( modelPath ) )
         {
-            var model = Model.Load( modelPath );
-            if ( model != null ) prop.Model = model;
+            var resolvedModel = HandlerBase.ResolveModel( modelPath, "configure_prop" );
+            if ( resolvedModel != null ) prop.Model = resolvedModel;
         }
 
         var tintStr = HandlerBase.GetString( args, "tint" );
@@ -726,18 +697,12 @@ internal static class EffectsHandler
             wp.InteractionRange = irEl.GetSingle();
 
         var hAlign = HandlerBase.GetString( args, "horizontal_align" );
-        if ( !string.IsNullOrEmpty( hAlign ) )
-        {
-            if ( Enum.TryParse<WorldPanel.HAlignment>( hAlign, true, out var ha ) )
-                wp.HorizontalAlign = ha;
-        }
+        var haParsed = HandlerBase.ResolveEnum<WorldPanel.HAlignment>( hAlign, "horizontal_align", "configure_world_panel" );
+        if ( haParsed.HasValue ) wp.HorizontalAlign = haParsed.Value;
 
         var vAlign = HandlerBase.GetString( args, "vertical_align" );
-        if ( !string.IsNullOrEmpty( vAlign ) )
-        {
-            if ( Enum.TryParse<WorldPanel.VAlignment>( vAlign, true, out var va ) )
-                wp.VerticalAlign = va;
-        }
+        var vaParsed = HandlerBase.ResolveEnum<WorldPanel.VAlignment>( vAlign, "vertical_align", "configure_world_panel" );
+        if ( vaParsed.HasValue ) wp.VerticalAlign = vaParsed.Value;
 
         return HandlerBase.Confirm( $"Configured WorldPanel on '{go.Name}'." );
     }
