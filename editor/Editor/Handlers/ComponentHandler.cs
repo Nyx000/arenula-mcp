@@ -238,6 +238,38 @@ internal static class ComponentHandler
         prop.SetValue( comp, converted );
         var readback = prop.GetValue( comp );
 
+        // Post-condition: for resource-valued properties, read back and confirm non-null.
+        // Check by PROPERTY TYPE (not read-back value) so we can detect null-after-set.
+        object verifiedPayload;
+
+        var propType = prop.PropertyType;
+        bool isResourceType = typeof( GameResource ).IsAssignableFrom( propType )
+                              || propType == typeof( Model )
+                              || propType == typeof( Material );
+
+        if ( isResourceType )
+        {
+            if ( readback == null )
+                return HandlerBase.Error(
+                    $"Property '{propName}' on {comp.GetType().Name} was set to '{valEl}' but read back as null. " +
+                    "Resource lookup likely failed — check that the asset is under 'Assets/' and indexed.",
+                    "set_property",
+                    "Use 'asset_query.get_status' to verify the asset is indexed." );
+
+            verifiedPayload = readback switch
+            {
+                GameResource gr => new { asset_name = gr.ResourceName, asset_path = gr.ResourcePath } as object,
+                Model mdl       => new { model_path = mdl.ResourcePath } as object,
+                Material mat    => new { material_path = mat.ResourcePath } as object,
+                _               => readback.ToString()
+            };
+        }
+        else
+        {
+            // Scalar or non-resource — include formatted value for transparency.
+            verifiedPayload = readback?.ToString();
+        }
+
         return HandlerBase.Success( new
         {
             id = go.Id.ToString(),
@@ -245,7 +277,8 @@ internal static class ComponentHandler
             component_type = comp.GetType().Name,
             property = propName,
             value = readback?.ToString(),
-            message = $"Set '{comp.GetType().Name}.{propName}' = {readback}"
+            message = $"Set '{comp.GetType().Name}.{propName}' = {readback}",
+            verified = verifiedPayload
         } );
     }
 
