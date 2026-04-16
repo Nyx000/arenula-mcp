@@ -263,6 +263,8 @@ internal static class EditorHandler
         if ( string.IsNullOrEmpty( path ) )
             return HandlerBase.Error( "Missing required 'path' parameter.", "save_scene_as" );
 
+        HandlerBase.RequireAssetsPath( path, "save_scene_as" );
+
         var session = SceneEditorSession.Active;
         if ( session == null ) return HandlerBase.Error( "No editor session.", "save_scene_as" );
 

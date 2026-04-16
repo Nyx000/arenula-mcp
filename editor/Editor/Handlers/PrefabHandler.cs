@@ -226,6 +226,8 @@ internal static class PrefabHandler
         if ( string.IsNullOrEmpty( savePath ) )
             return HandlerBase.Error( "Missing required 'save_path' parameter.", "create" );
 
+        HandlerBase.RequireAssetsPath( savePath, "save_as_prefab" );
+
         var go = SceneHelpers.FindByIdOrThrow( scene, id, "create" );
 
         // Ensure the path ends with .prefab
