@@ -139,8 +139,7 @@ internal static class PhysicsHandler
             {
                 var c = go.Components.Create<HullCollider>();
                 var hullType = HandlerBase.GetString( args, "hull_type", "Box" );
-                if ( Enum.TryParse<HullCollider.PrimitiveType>( hullType, true, out var pt ) )
-                    c.Type = pt;
+                c.Type = HandlerBase.RequireEnum<HullCollider.PrimitiveType>( hullType, "hull_type", "create_hull_collider" );
                 var centerStr = HandlerBase.GetString( args, "center" );
                 if ( centerStr != null ) c.Center = HandlerBase.ParseVector3( centerStr );
                 if ( c.Type == HullCollider.PrimitiveType.Box )
@@ -338,10 +337,7 @@ internal static class PhysicsHandler
 
         var modelPath = HandlerBase.GetString( args, "model_path" );
         if ( !string.IsNullOrEmpty( modelPath ) )
-        {
-            var model = Model.Load( modelPath );
-            if ( model != null ) mp.Model = model;
-        }
+            mp.Model = HandlerBase.RequireModel( modelPath, "create_map_physics" );
 
         mp.MotionEnabled = HandlerBase.GetBool( args, "motion_enabled", true );
 
@@ -455,11 +451,7 @@ internal static class PhysicsHandler
 
         // Link body_b (optional anchor body)
         var bodyB = HandlerBase.GetString( args, "body_b" );
-        if ( !string.IsNullOrEmpty( bodyB ) )
-        {
-            var bodyBGo = SceneHelpers.FindById( scene, bodyB );
-            if ( bodyBGo != null ) joint.AnchorBody = bodyBGo;
-        }
+        joint.AnchorBody = HandlerBase.ResolveGameObjectById( scene, bodyB, "create_joint" );
 
         return HandlerBase.Success( new
         {
