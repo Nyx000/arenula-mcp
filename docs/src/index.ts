@@ -2,9 +2,10 @@
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
-import { SearchDocsInput, GetPageInput } from './schemas/index.js'
+import { SearchDocsInput, GetPageInput, ListDocsInput } from './schemas/index.js'
 import { searchDocs } from './tools/search-docs.js'
 import { getPage } from './tools/get-page.js'
+import { listDocs } from './tools/list-docs.js'
 
 const server = new McpServer({
   name: 'Arenula Docs',
@@ -27,6 +28,16 @@ server.tool(
   GetPageInput.shape,
   async (params) => {
     const text = await getPage(params)
+    return { content: [{ type: 'text', text }] }
+  },
+)
+
+server.tool(
+  'sbox_docs_list',
+  'Browse the s&box documentation table of contents. Lists pages by category. Call with no arguments for a category overview.',
+  ListDocsInput.shape,
+  async (params) => {
+    const text = await listDocs(params)
     return { content: [{ type: 'text', text }] }
   },
 )
