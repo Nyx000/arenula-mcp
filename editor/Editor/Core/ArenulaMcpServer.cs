@@ -210,26 +210,42 @@ public static class ArenulaMcpServer
 
     private static async Task HandleContext( HttpListenerContext context )
     {
-        var req = context.Request;
-        var res = context.Response;
-
-        res.Headers.Add( "Access-Control-Allow-Origin",  "*" );
-        res.Headers.Add( "Access-Control-Allow-Methods", "GET, POST, OPTIONS" );
-        res.Headers.Add( "Access-Control-Allow-Headers", "*" );
-
-        if ( req.HttpMethod == "OPTIONS" ) { res.StatusCode = 200; res.Close(); return; }
-
+        // Top-level guard: this is invoked via `_ = Task.Run(...)` in ListenLoop, so any
+        // exception that escapes is unobserved and surfaces on the finalizer thread as
+        // "A Task's exception(s) were not observed". The most common path is
+        // ObjectDisposedException on res when the listener is torn down mid-request.
         try
         {
-            if      ( req.Url.AbsolutePath == "/sse"     && req.HttpMethod == "GET"  ) await HandleSse( req, res );
-            else if ( req.Url.AbsolutePath == "/message" && req.HttpMethod == "POST" ) await HandleMessage( req, res );
-            else    { res.StatusCode = 404; res.Close(); }
+            var req = context.Request;
+            var res = context.Response;
+
+            res.Headers.Add( "Access-Control-Allow-Origin",  "*" );
+            res.Headers.Add( "Access-Control-Allow-Methods", "GET, POST, OPTIONS" );
+            res.Headers.Add( "Access-Control-Allow-Headers", "*" );
+
+            if ( req.HttpMethod == "OPTIONS" ) { res.StatusCode = 200; res.Close(); return; }
+
+            try
+            {
+                if      ( req.Url.AbsolutePath == "/sse"     && req.HttpMethod == "GET"  ) await HandleSse( req, res );
+                else if ( req.Url.AbsolutePath == "/message" && req.HttpMethod == "POST" ) await HandleMessage( req, res );
+                else    { res.StatusCode = 404; res.Close(); }
+            }
+            catch ( ObjectDisposedException )
+            {
+                // Listener/response torn down mid-request. Nothing to clean up safely.
+            }
+            catch ( Exception ex )
+            {
+                try { LogError( $"Error handling MCP request: {ex.Message}" ); } catch { }
+                // Response cleanup must itself be guarded — if the original exception
+                // came from a disposed response, these lines will re-throw.
+                try { res.StatusCode = 500; res.Close(); } catch { }
+            }
         }
         catch ( Exception ex )
         {
-            LogError( $"Error handling MCP request: {ex.Message}" );
-            res.StatusCode = 500;
-            res.Close();
+            try { LogError( $"Unhandled error in MCP HandleContext: {ex.Message}" ); } catch { }
         }
     }
 
