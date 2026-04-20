@@ -8,7 +8,7 @@
       "command": "node",
       "args": ["path/to/Arenula-MCP/api/dist/index.js"],
       "env": {
-        "SBOX_API_URL": "https://cdn.sbox.game/releases/2026-04-15-19-51-43.zip.json"
+        "SBOX_API_URL": "https://cdn.sbox.game/releases/2026-04-20-19-10-25.zip.json"
       }
     },
     "docs": {
