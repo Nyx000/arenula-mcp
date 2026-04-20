@@ -365,4 +365,85 @@ internal static class HandlerBase
 
         return System.IO.Path.Combine( root, relativePath.Replace( '/', System.IO.Path.DirectorySeparatorChar ) );
     }
+
+    // ── Cleanup helpers (refactor-cleanup.md Cards 1/3/6/7) ───────────
+    // Additions introduced before any call-site migration — existing
+    // behavior unchanged. Batch 2 moves current boilerplate onto these.
+
+    /// <summary>
+    /// Scene companion to RequireGameObjectById: errors if no scene is active.
+    /// Throws InvalidOperationException — caught by each handler's top-level
+    /// try/catch and converted to HandlerBase.Error.
+    /// </summary>
+    internal static Scene RequireScene( string action )
+    {
+        var scene = SceneHelpers.ResolveScene();
+        if ( scene == null )
+            throw new InvalidOperationException(
+                $"No active scene found for '{action}'. Open a scene in the editor first." );
+        return scene;
+    }
+
+    /// <summary>Try to extract a float. Returns true only if the property was provided.</summary>
+    internal static bool TryGetFloat( JsonElement args, string name, out float value )
+    {
+        if ( args.ValueKind != JsonValueKind.Undefined &&
+             args.TryGetProperty( name, out var el ) && el.ValueKind == JsonValueKind.Number )
+        {
+            value = el.GetSingle();
+            return true;
+        }
+        value = 0f;
+        return false;
+    }
+
+    /// <summary>Try to extract an int. Returns true only if the property was provided.</summary>
+    internal static bool TryGetInt( JsonElement args, string name, out int value )
+    {
+        if ( args.ValueKind != JsonValueKind.Undefined &&
+             args.TryGetProperty( name, out var el ) && el.ValueKind == JsonValueKind.Number )
+        {
+            value = el.GetInt32();
+            return true;
+        }
+        value = 0;
+        return false;
+    }
+
+    /// <summary>Try to extract a bool. Returns true only if the property was provided.</summary>
+    internal static bool TryGetBool( JsonElement args, string name, out bool value )
+    {
+        if ( args.ValueKind != JsonValueKind.Undefined &&
+             args.TryGetProperty( name, out var el ) )
+        {
+            if ( el.ValueKind == JsonValueKind.True )  { value = true;  return true; }
+            if ( el.ValueKind == JsonValueKind.False ) { value = false; return true; }
+        }
+        value = false;
+        return false;
+    }
+
+    /// <summary>
+    /// Parse a color string from args and invoke the setter if provided and parseable.
+    /// Preserves the silent-failure behavior of the inline pattern it replaces.
+    /// </summary>
+    internal static void ApplyColor( JsonElement args, string name, Action<Color> apply )
+    {
+        var s = GetString( args, name );
+        if ( string.IsNullOrEmpty( s ) ) return;
+        try
+        {
+            var c = Color.Parse( s );
+            if ( c.HasValue ) apply( c.Value );
+        }
+        catch { }
+    }
+
+    /// <summary>
+    /// Extract an asset path from args and strip the leading "Assets/" prefix.
+    /// AssetSystem.FindByPath silently returns null if the prefix is left in;
+    /// this helper removes that foot-gun in the 14 existing call sites.
+    /// </summary>
+    internal static string GetAssetPath( JsonElement args, string name = "path" )
+        => SceneHelpers.NormalizePath( GetString( args, name ) );
 }

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using Editor;
 using Sandbox;
 
@@ -273,5 +274,21 @@ internal static class SceneHelpers
         }
 
         return BBox.FromPositionAndSize( go.WorldPosition, 1f );
+    }
+
+    // ── Cleanup helpers (refactor-cleanup.md Card 4) ──────────────────
+
+    /// <summary>
+    /// Look up a component of type T on the GameObject: by GUID from the
+    /// "component_id" arg if provided, else the first of that type.
+    /// Returns null if nothing matches.
+    /// </summary>
+    internal static T GetComponentByIdOrFirst<T>( GameObject go, JsonElement args, string idParam = "component_id" )
+        where T : Component
+    {
+        var compId = HandlerBase.GetString( args, idParam );
+        if ( !string.IsNullOrEmpty( compId ) && Guid.TryParse( compId, out var cGuid ) )
+            return go.Components.GetAll().FirstOrDefault( c => c is T && c.Id == cGuid ) as T;
+        return go.Components.Get<T>();
     }
 }
