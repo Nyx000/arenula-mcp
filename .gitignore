@@ -16,3 +16,6 @@ editor/.vscode/
 editor/ProjectSettings/
 test/
 .superpowers/
+CLAUDE.md
+context/
+docs/superpowers/
