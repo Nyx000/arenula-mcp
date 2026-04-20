@@ -66,6 +66,61 @@ internal static class TraceHandler
         return trace;
     }
 
+    // ── Shared: terrain raycast fallback ───────────────────────────────
+    // Terrain physics collider may not update after heightmap edits in the
+    // same session. Use Terrain.RayIntersects (heightmap-based, no physics)
+    // as a fallback when Scene.Trace misses.
+
+    private static object TryTerrainFallback( Scene scene, Vector3 from, Vector3 to )
+    {
+        var direction = ( to - from ).Normal;
+        var distance = Vector3.DistanceBetween( from, to );
+        var ray = new Ray( from, direction );
+
+        foreach ( var go in SceneHelpers.WalkAll( scene ) )
+        {
+            var terrain = go.Components.Get<Terrain>();
+            if ( terrain == null ) continue;
+
+            if ( terrain.RayIntersects( ray, distance, out var localPos ) )
+            {
+                // localPos is in terrain local space — convert to world
+                var worldPos = go.WorldTransform.PointToWorld( localPos );
+                return new
+                {
+                    hit = true,
+                    position = HandlerBase.V3( worldPos ),
+                    normal = new { x = 0, y = 0, z = 1 },
+                    distance = MathF.Round( Vector3.DistanceBetween( from, worldPos ), 2 ),
+                    fraction = MathF.Round( Vector3.DistanceBetween( from, worldPos ) / distance, 4 ),
+                    start_position = HandlerBase.V3( from ),
+                    end_position = HandlerBase.V3( worldPos ),
+                    surface = "terrain",
+                    tags = new[] { "solid" },
+                    @object = new { id = go.Id.ToString(), name = go.Name },
+                    component_type = "Terrain"
+                };
+            }
+        }
+
+        return null;
+    }
+
+    // ── Shared: run trace with terrain fallback ─────────────────────
+
+    private static object RunWithFallback( Scene scene, SceneTrace trace, Vector3 from, Vector3 to )
+    {
+        var result = trace.Run();
+        if ( result.Hit )
+            return FormatResult( result );
+
+        var fallback = TryTerrainFallback( scene, from, to );
+        if ( fallback != null )
+            return fallback;
+
+        return FormatResult( result );
+    }
+
     // ── Shared: format a SceneTraceResult into a response object ─────
 
     private static object FormatResult( SceneTraceResult r )
@@ -115,9 +170,8 @@ internal static class TraceHandler
 
         var trace = scene.Trace.Ray( from, to );
         trace = ApplyFilters( trace, args, scene );
-        var result = trace.Run();
 
-        return HandlerBase.Success( FormatResult( result ) );
+        return HandlerBase.Success( RunWithFallback( scene, trace, from, to ) );
     }
 
     // ── sphere_cast ─────────────────────────────────────────────────
@@ -216,7 +270,50 @@ internal static class TraceHandler
                 trace = ApplyFilters( trace, args, scene );
                 var result = trace.Run();
 
-                if ( result.Hit )
+                // Terrain fallback if physics missed
+                if ( !result.Hit )
+                {
+                    var fb = TryTerrainFallback( scene, from, to );
+                    if ( fb != null )
+                    {
+                        // Extract z from fallback result via reflection-free approach:
+                        // TryTerrainFallback returns world hit pos, reparse it
+                        hits++;
+                        // Re-do terrain raycast to get worldPos directly
+                        foreach ( var tgo in SceneHelpers.WalkAll( scene ) )
+                        {
+                            var terr = tgo.Components.Get<Terrain>();
+                            if ( terr == null ) continue;
+                            var dir = ( to - from ).Normal;
+                            var dist = Vector3.DistanceBetween( from, to );
+                            if ( terr.RayIntersects( new Ray( from, dir ), dist, out var lp ) )
+                            {
+                                var wp = tgo.WorldTransform.PointToWorld( lp );
+                                float z = wp.z;
+                                if ( z < minZ ) minZ = z;
+                                if ( z > maxZ ) maxZ = z;
+                                grid.Add( new
+                                {
+                                    x = MathF.Round( x, 1 ),
+                                    y = MathF.Round( y, 1 ),
+                                    hit = true,
+                                    z = MathF.Round( z, 2 ),
+                                    surface = "terrain",
+                                    object_name = tgo.Name
+                                } );
+                                goto nextCell;
+                            }
+                        }
+                    }
+
+                    grid.Add( new
+                    {
+                        x = MathF.Round( x, 1 ),
+                        y = MathF.Round( y, 1 ),
+                        hit = false
+                    } );
+                }
+                else
                 {
                     hits++;
                     float z = result.EndPosition.z;
@@ -232,15 +329,7 @@ internal static class TraceHandler
                         object_name = result.GameObject?.Name
                     } );
                 }
-                else
-                {
-                    grid.Add( new
-                    {
-                        x = MathF.Round( x, 1 ),
-                        y = MathF.Round( y, 1 ),
-                        hit = false
-                    } );
-                }
+                nextCell:;
             }
         }
 
@@ -293,8 +382,7 @@ internal static class TraceHandler
 
             var trace = scene.Trace.Ray( from, to );
             trace = ApplyFilters( trace, args, scene );
-            var result = trace.Run();
-            results.Add( FormatResult( result ) );
+            results.Add( RunWithFallback( scene, trace, from, to ) );
         }
 
         return HandlerBase.Success( new { results, count = results.Count } );
