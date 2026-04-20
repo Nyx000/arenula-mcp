@@ -1,7 +1,6 @@
 // editor/Editor/Handlers/TraceHandler.cs
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text.Json;
 using Sandbox;
 
@@ -230,6 +229,42 @@ internal static class TraceHandler
 
     // ── sample_grid ─────────────────────────────────────────────────
 
+    // Returns a terrain-hit cell record for the given downward ray, or null
+    // if no terrain is hit. Updates minZ/maxZ by ref when a hit is produced.
+    // Extracted from SampleGrid to replace a `goto nextCell` across 3 nested
+    // loops (refactor-cleanup.md Card 8).
+    private static object TryTerrainGridCell(
+        Scene scene, Vector3 from, Vector3 to,
+        float roundedX, float roundedY, ref float minZ, ref float maxZ )
+    {
+        var fb = TryTerrainFallback( scene, from, to );
+        if ( fb == null ) return null;
+
+        foreach ( var tgo in SceneHelpers.WalkAll( scene ) )
+        {
+            var terr = tgo.Components.Get<Terrain>();
+            if ( terr == null ) continue;
+            var dir = ( to - from ).Normal;
+            var dist = Vector3.DistanceBetween( from, to );
+            if ( !terr.RayIntersects( new Ray( from, dir ), dist, out var lp ) ) continue;
+
+            var wp = tgo.WorldTransform.PointToWorld( lp );
+            var z = wp.z;
+            if ( z < minZ ) minZ = z;
+            if ( z > maxZ ) maxZ = z;
+            return new
+            {
+                x = roundedX,
+                y = roundedY,
+                hit = true,
+                z = MathF.Round( z, 2 ),
+                surface = "terrain",
+                object_name = tgo.Name
+            };
+        }
+        return null;
+    }
+
     private static object SampleGrid( JsonElement args )
     {
         var scene = SceneHelpers.ResolveScene();
@@ -273,45 +308,22 @@ internal static class TraceHandler
                 // Terrain fallback if physics missed
                 if ( !result.Hit )
                 {
-                    var fb = TryTerrainFallback( scene, from, to );
-                    if ( fb != null )
+                    var terrainCell = TryTerrainGridCell( scene, from, to,
+                        MathF.Round( x, 1 ), MathF.Round( y, 1 ), ref minZ, ref maxZ );
+                    if ( terrainCell != null )
                     {
-                        // Extract z from fallback result via reflection-free approach:
-                        // TryTerrainFallback returns world hit pos, reparse it
                         hits++;
-                        // Re-do terrain raycast to get worldPos directly
-                        foreach ( var tgo in SceneHelpers.WalkAll( scene ) )
-                        {
-                            var terr = tgo.Components.Get<Terrain>();
-                            if ( terr == null ) continue;
-                            var dir = ( to - from ).Normal;
-                            var dist = Vector3.DistanceBetween( from, to );
-                            if ( terr.RayIntersects( new Ray( from, dir ), dist, out var lp ) )
-                            {
-                                var wp = tgo.WorldTransform.PointToWorld( lp );
-                                float z = wp.z;
-                                if ( z < minZ ) minZ = z;
-                                if ( z > maxZ ) maxZ = z;
-                                grid.Add( new
-                                {
-                                    x = MathF.Round( x, 1 ),
-                                    y = MathF.Round( y, 1 ),
-                                    hit = true,
-                                    z = MathF.Round( z, 2 ),
-                                    surface = "terrain",
-                                    object_name = tgo.Name
-                                } );
-                                goto nextCell;
-                            }
-                        }
+                        grid.Add( terrainCell );
                     }
-
-                    grid.Add( new
+                    else
                     {
-                        x = MathF.Round( x, 1 ),
-                        y = MathF.Round( y, 1 ),
-                        hit = false
-                    } );
+                        grid.Add( new
+                        {
+                            x = MathF.Round( x, 1 ),
+                            y = MathF.Round( y, 1 ),
+                            hit = false
+                        } );
+                    }
                 }
                 else
                 {
@@ -329,7 +341,6 @@ internal static class TraceHandler
                         object_name = result.GameObject?.Name
                     } );
                 }
-                nextCell:;
             }
         }
 
