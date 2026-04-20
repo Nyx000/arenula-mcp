@@ -103,25 +103,15 @@ internal static class PlayerHandler
         var pc = FindController( scene, id, "configure_movement", out var error );
         if ( error != null ) return error;
 
-        if ( args.TryGetProperty( "walk_speed", out var wsEl ) && wsEl.ValueKind == JsonValueKind.Number )
-            pc.WalkSpeed = wsEl.GetSingle();
-        if ( args.TryGetProperty( "run_speed", out var rsEl ) && rsEl.ValueKind == JsonValueKind.Number )
-            pc.RunSpeed = rsEl.GetSingle();
-        if ( args.TryGetProperty( "ducked_speed", out var dsEl ) && dsEl.ValueKind == JsonValueKind.Number )
-            pc.DuckedSpeed = dsEl.GetSingle();
-        if ( args.TryGetProperty( "jump_speed", out var jsEl ) && jsEl.ValueKind == JsonValueKind.Number )
-            pc.JumpSpeed = jsEl.GetSingle();
-        if ( args.TryGetProperty( "acceleration_time", out var atEl ) && atEl.ValueKind == JsonValueKind.Number )
-            pc.AccelerationTime = atEl.GetSingle();
-        if ( args.TryGetProperty( "deacceleration_time", out var dtEl ) && dtEl.ValueKind == JsonValueKind.Number )
-            pc.DeaccelerationTime = dtEl.GetSingle();
-        if ( args.TryGetProperty( "air_friction", out var afEl ) && afEl.ValueKind == JsonValueKind.Number )
-            pc.AirFriction = afEl.GetSingle();
-        if ( args.TryGetProperty( "brake_power", out var bpEl ) && bpEl.ValueKind == JsonValueKind.Number )
-            pc.BrakePower = bpEl.GetSingle();
-        if ( args.TryGetProperty( "run_by_default", out var rbdEl ) &&
-             ( rbdEl.ValueKind == JsonValueKind.True || rbdEl.ValueKind == JsonValueKind.False ) )
-            pc.RunByDefault = rbdEl.GetBoolean();
+        if ( HandlerBase.TryGetFloat( args, "walk_speed", out var ws ) ) pc.WalkSpeed = ws;
+        if ( HandlerBase.TryGetFloat( args, "run_speed", out var rs ) ) pc.RunSpeed = rs;
+        if ( HandlerBase.TryGetFloat( args, "ducked_speed", out var ds ) ) pc.DuckedSpeed = ds;
+        if ( HandlerBase.TryGetFloat( args, "jump_speed", out var js ) ) pc.JumpSpeed = js;
+        if ( HandlerBase.TryGetFloat( args, "acceleration_time", out var at ) ) pc.AccelerationTime = at;
+        if ( HandlerBase.TryGetFloat( args, "deacceleration_time", out var dt ) ) pc.DeaccelerationTime = dt;
+        if ( HandlerBase.TryGetFloat( args, "air_friction", out var af ) ) pc.AirFriction = af;
+        if ( HandlerBase.TryGetFloat( args, "brake_power", out var bp ) ) pc.BrakePower = bp;
+        if ( HandlerBase.TryGetBool( args, "run_by_default", out var rbd ) ) pc.RunByDefault = rbd;
 
         return HandlerBase.Confirm( $"Configured movement on '{pc.GameObject.Name}': walk={pc.WalkSpeed}, run={pc.RunSpeed}, jump={pc.JumpSpeed}." );
     }
@@ -141,24 +131,15 @@ internal static class PlayerHandler
         var pc = FindController( scene, id, "configure_camera", out var error );
         if ( error != null ) return error;
 
-        if ( args.TryGetProperty( "third_person", out var tpEl ) &&
-             ( tpEl.ValueKind == JsonValueKind.True || tpEl.ValueKind == JsonValueKind.False ) )
-            pc.ThirdPerson = tpEl.GetBoolean();
-        if ( args.TryGetProperty( "hide_body_in_first_person", out var hbEl ) &&
-             ( hbEl.ValueKind == JsonValueKind.True || hbEl.ValueKind == JsonValueKind.False ) )
-            pc.HideBodyInFirstPerson = hbEl.GetBoolean();
+        if ( HandlerBase.TryGetBool( args, "third_person", out var tp ) ) pc.ThirdPerson = tp;
+        if ( HandlerBase.TryGetBool( args, "hide_body_in_first_person", out var hb ) ) pc.HideBodyInFirstPerson = hb;
         var offsetStr = HandlerBase.GetString( args, "camera_offset" );
         if ( offsetStr != null )
             pc.CameraOffset = HandlerBase.ParseVector3( offsetStr );
-        if ( args.TryGetProperty( "eye_distance_from_top", out var edEl ) && edEl.ValueKind == JsonValueKind.Number )
-            pc.EyeDistanceFromTop = edEl.GetSingle();
-        if ( args.TryGetProperty( "pitch_clamp", out var pcEl ) && pcEl.ValueKind == JsonValueKind.Number )
-            pc.PitchClamp = pcEl.GetSingle();
-        if ( args.TryGetProperty( "look_sensitivity", out var lsEl ) && lsEl.ValueKind == JsonValueKind.Number )
-            pc.LookSensitivity = lsEl.GetSingle();
-        if ( args.TryGetProperty( "use_fov_from_preferences", out var ufEl ) &&
-             ( ufEl.ValueKind == JsonValueKind.True || ufEl.ValueKind == JsonValueKind.False ) )
-            pc.UseFovFromPreferences = ufEl.GetBoolean();
+        if ( HandlerBase.TryGetFloat( args, "eye_distance_from_top", out var ed ) ) pc.EyeDistanceFromTop = ed;
+        if ( HandlerBase.TryGetFloat( args, "pitch_clamp", out var pc ) ) pc.PitchClamp = pc;
+        if ( HandlerBase.TryGetFloat( args, "look_sensitivity", out var ls ) ) pc.LookSensitivity = ls;
+        if ( HandlerBase.TryGetBool( args, "use_fov_from_preferences", out var uf ) ) pc.UseFovFromPreferences = uf;
 
         return HandlerBase.Confirm( $"Configured camera on '{pc.GameObject.Name}': third_person={pc.ThirdPerson}." );
     }
@@ -178,14 +159,10 @@ internal static class PlayerHandler
         var pc = FindController( scene, id, "configure_body", out var error );
         if ( error != null ) return error;
 
-        if ( args.TryGetProperty( "body_height", out var bhEl ) && bhEl.ValueKind == JsonValueKind.Number )
-            pc.BodyHeight = bhEl.GetSingle();
-        if ( args.TryGetProperty( "body_radius", out var brEl ) && brEl.ValueKind == JsonValueKind.Number )
-            pc.BodyRadius = brEl.GetSingle();
-        if ( args.TryGetProperty( "body_mass", out var bmEl ) && bmEl.ValueKind == JsonValueKind.Number )
-            pc.BodyMass = bmEl.GetSingle();
-        if ( args.TryGetProperty( "ducked_height", out var dhEl ) && dhEl.ValueKind == JsonValueKind.Number )
-            pc.DuckedHeight = dhEl.GetSingle();
+        if ( HandlerBase.TryGetFloat( args, "body_height", out var bh ) ) pc.BodyHeight = bh;
+        if ( HandlerBase.TryGetFloat( args, "body_radius", out var br ) ) pc.BodyRadius = br;
+        if ( HandlerBase.TryGetFloat( args, "body_mass", out var bm ) ) pc.BodyMass = bm;
+        if ( HandlerBase.TryGetFloat( args, "ducked_height", out var dh ) ) pc.DuckedHeight = dh;
 
         var collisionTags = HandlerBase.GetString( args, "collision_tags" );
         if ( !string.IsNullOrEmpty( collisionTags ) )
@@ -213,14 +190,11 @@ internal static class PlayerHandler
         var pc = FindController( scene, id, "configure_interaction", out var error );
         if ( error != null ) return error;
 
-        if ( args.TryGetProperty( "enable_pressing", out var epEl ) &&
-             ( epEl.ValueKind == JsonValueKind.True || epEl.ValueKind == JsonValueKind.False ) )
-            pc.EnablePressing = epEl.GetBoolean();
+        if ( HandlerBase.TryGetBool( args, "enable_pressing", out var ep ) ) pc.EnablePressing = ep;
         var useButton = HandlerBase.GetString( args, "use_button" );
         if ( useButton != null )
             pc.UseButton = useButton;
-        if ( args.TryGetProperty( "reach_length", out var rlEl ) && rlEl.ValueKind == JsonValueKind.Number )
-            pc.ReachLength = rlEl.GetSingle();
+        if ( HandlerBase.TryGetFloat( args, "reach_length", out var rl ) ) pc.ReachLength = rl;
 
         return HandlerBase.Confirm( $"Configured interaction on '{pc.GameObject.Name}': pressing={pc.EnablePressing}, reach={pc.ReachLength}." );
     }

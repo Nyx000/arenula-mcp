@@ -74,10 +74,8 @@ internal static class AudioHandler
         if ( !string.IsNullOrEmpty( soundEvent ) )
             snd.SoundEvent = HandlerBase.RequireResource<SoundEvent>( soundEvent, "create_audio_source" );
 
-        if ( args.TryGetProperty( "volume", out var vEl ) && vEl.ValueKind == JsonValueKind.Number )
-            snd.Volume = vEl.GetSingle();
-        if ( args.TryGetProperty( "pitch", out var pEl ) && pEl.ValueKind == JsonValueKind.Number )
-            snd.Pitch = pEl.GetSingle();
+        if ( HandlerBase.TryGetFloat( args, "volume", out var v ) ) snd.Volume = v;
+        if ( HandlerBase.TryGetFloat( args, "pitch", out var p ) ) snd.Pitch = p;
         snd.PlayOnStart = HandlerBase.GetBool( args, "play_on_start", true );
         snd.Repeat = HandlerBase.GetBool( args, "repeat", false );
 
@@ -102,10 +100,8 @@ internal static class AudioHandler
         var ttParsed = HandlerBase.ResolveEnum<SoundscapeTrigger.TriggerType>( triggerType, "trigger_type", "create_soundscape_trigger" );
         if ( ttParsed.HasValue ) st.Type = ttParsed.Value;
 
-        if ( args.TryGetProperty( "volume", out var vEl ) && vEl.ValueKind == JsonValueKind.Number )
-            st.Volume = vEl.GetSingle();
-        if ( args.TryGetProperty( "radius", out var rEl ) && rEl.ValueKind == JsonValueKind.Number )
-            st.Radius = rEl.GetSingle();
+        if ( HandlerBase.TryGetFloat( args, "volume", out var v ) ) st.Volume = v;
+        if ( HandlerBase.TryGetFloat( args, "radius", out var r ) ) st.Radius = r;
         st.StayActiveOnExit = HandlerBase.GetBool( args, "stay_active_on_exit", true );
 
         var boxSizeStr = HandlerBase.GetString( args, "box_size" );
@@ -133,8 +129,7 @@ internal static class AudioHandler
         go.WorldPosition = position;
 
         var sb = go.Components.Create<SoundBoxComponent>();
-        if ( args.TryGetProperty( "volume", out var vEl ) && vEl.ValueKind == JsonValueKind.Number )
-            sb.Volume = vEl.GetSingle();
+        if ( HandlerBase.TryGetFloat( args, "volume", out var v ) ) sb.Volume = v;
         sb.PlayOnStart = HandlerBase.GetBool( args, "play_on_start", true );
         sb.Repeat = HandlerBase.GetBool( args, "repeat", false );
 
@@ -255,21 +250,12 @@ internal static class AudioHandler
         if ( !string.IsNullOrEmpty( soundEvent ) )
             snd.SoundEvent = HandlerBase.RequireResource<SoundEvent>( soundEvent, "configure_audio_source" );
 
-        if ( args.TryGetProperty( "volume", out var vEl ) && vEl.ValueKind == JsonValueKind.Number )
-            snd.Volume = vEl.GetSingle();
-        if ( args.TryGetProperty( "pitch", out var pEl ) && pEl.ValueKind == JsonValueKind.Number )
-            snd.Pitch = pEl.GetSingle();
-        if ( args.TryGetProperty( "play_on_start", out var posEl ) &&
-             ( posEl.ValueKind == JsonValueKind.True || posEl.ValueKind == JsonValueKind.False ) )
-            snd.PlayOnStart = posEl.GetBoolean();
-        if ( args.TryGetProperty( "repeat", out var repEl ) &&
-             ( repEl.ValueKind == JsonValueKind.True || repEl.ValueKind == JsonValueKind.False ) )
-            snd.Repeat = repEl.GetBoolean();
-        if ( args.TryGetProperty( "distance_attenuation", out var daEl ) &&
-             ( daEl.ValueKind == JsonValueKind.True || daEl.ValueKind == JsonValueKind.False ) )
-            snd.DistanceAttenuation = daEl.GetBoolean();
-        if ( args.TryGetProperty( "distance", out var dEl ) && dEl.ValueKind == JsonValueKind.Number )
-            snd.Distance = dEl.GetSingle();
+        if ( HandlerBase.TryGetFloat( args, "volume", out var v ) ) snd.Volume = v;
+        if ( HandlerBase.TryGetFloat( args, "pitch", out var p ) ) snd.Pitch = p;
+        if ( HandlerBase.TryGetBool( args, "play_on_start", out var pos ) ) snd.PlayOnStart = pos;
+        if ( HandlerBase.TryGetBool( args, "repeat", out var rep ) ) snd.Repeat = rep;
+        if ( HandlerBase.TryGetBool( args, "distance_attenuation", out var da ) ) snd.DistanceAttenuation = da;
+        if ( HandlerBase.TryGetFloat( args, "distance", out var d ) ) snd.Distance = d;
 
         return HandlerBase.Confirm( $"Configured sound on '{go.Name}' ({snd.GetType().Name})." );
     }

@@ -65,20 +65,12 @@ internal static class NavmeshHandler
 
         var agent = go.Components.Create<NavMeshAgent>();
 
-        if ( args.TryGetProperty( "height", out var hEl ) && hEl.ValueKind == JsonValueKind.Number )
-            agent.Height = hEl.GetSingle();
-        if ( args.TryGetProperty( "radius", out var rEl ) && rEl.ValueKind == JsonValueKind.Number )
-            agent.Radius = rEl.GetSingle();
-        if ( args.TryGetProperty( "speed", out var sEl ) && sEl.ValueKind == JsonValueKind.Number )
-            agent.MaxSpeed = sEl.GetSingle();
-        if ( args.TryGetProperty( "acceleration", out var aEl ) && aEl.ValueKind == JsonValueKind.Number )
-            agent.Acceleration = aEl.GetSingle();
-        if ( args.TryGetProperty( "update_position", out var upEl ) &&
-             ( upEl.ValueKind == JsonValueKind.True || upEl.ValueKind == JsonValueKind.False ) )
-            agent.UpdatePosition = upEl.GetBoolean();
-        if ( args.TryGetProperty( "update_rotation", out var urEl ) &&
-             ( urEl.ValueKind == JsonValueKind.True || urEl.ValueKind == JsonValueKind.False ) )
-            agent.UpdateRotation = urEl.GetBoolean();
+        if ( HandlerBase.TryGetFloat( args, "height", out var h ) ) agent.Height = h;
+        if ( HandlerBase.TryGetFloat( args, "radius", out var r ) ) agent.Radius = r;
+        if ( HandlerBase.TryGetFloat( args, "speed", out var s ) ) agent.MaxSpeed = s;
+        if ( HandlerBase.TryGetFloat( args, "acceleration", out var a ) ) agent.Acceleration = a;
+        if ( HandlerBase.TryGetBool( args, "update_position", out var up ) ) agent.UpdatePosition = up;
+        if ( HandlerBase.TryGetBool( args, "update_rotation", out var ur ) ) agent.UpdateRotation = ur;
 
         return HandlerBase.Success( new
         {
@@ -153,9 +145,7 @@ internal static class NavmeshHandler
         link.LocalStartPosition = startPos - midpoint;
         link.LocalEndPosition = endPos - midpoint;
 
-        if ( args.TryGetProperty( "bidirectional", out var bdEl ) &&
-             ( bdEl.ValueKind == JsonValueKind.True || bdEl.ValueKind == JsonValueKind.False ) )
-            link.IsBiDirectional = bdEl.GetBoolean();
+        if ( HandlerBase.TryGetBool( args, "bidirectional", out var bd ) ) link.IsBiDirectional = bd;
 
         return HandlerBase.Success( new
         {

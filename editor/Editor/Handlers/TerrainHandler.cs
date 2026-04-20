@@ -1438,8 +1438,7 @@ internal static class TerrainHandler
             clutter.Clutter = def;
         }
 
-        if ( args.TryGetProperty( "seed", out var sEl ) && sEl.ValueKind == JsonValueKind.Number )
-            clutter.Seed = sEl.GetInt32();
+        if ( HandlerBase.TryGetInt( args, "seed", out var s ) ) clutter.Seed = s;
 
         var modeStr = HandlerBase.GetString( args, "mode" );
         var modeParsed = HandlerBase.ResolveEnum<Sandbox.Clutter.ClutterComponent.ClutterMode>( modeStr, "mode", "configure_clutter" );

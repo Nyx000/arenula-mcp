@@ -58,28 +58,22 @@ internal static class CameraHandler
         go.WorldRotation = rotation;
 
         var cam = go.Components.Create<CameraComponent>();
-        if ( args.TryGetProperty( "fov", out var fovEl ) && fovEl.ValueKind == JsonValueKind.Number )
-            cam.FieldOfView = fovEl.GetSingle();
+        if ( HandlerBase.TryGetFloat( args, "fov", out var fov ) ) cam.FieldOfView = fov;
         else
             cam.FieldOfView = 60f;
 
-        if ( args.TryGetProperty( "near_clip", out var znEl ) && znEl.ValueKind == JsonValueKind.Number )
-            cam.ZNear = znEl.GetSingle();
+        if ( HandlerBase.TryGetFloat( args, "near_clip", out var zn ) ) cam.ZNear = zn;
         else
             cam.ZNear = 10f;
 
-        if ( args.TryGetProperty( "far_clip", out var zfEl ) && zfEl.ValueKind == JsonValueKind.Number )
-            cam.ZFar = zfEl.GetSingle();
+        if ( HandlerBase.TryGetFloat( args, "far_clip", out var zf ) ) cam.ZFar = zf;
         else
             cam.ZFar = 10000f;
 
         cam.IsMainCamera = HandlerBase.GetBool( args, "is_main_camera", true );
 
-        if ( args.TryGetProperty( "orthographic", out var orthoEl ) &&
-             ( orthoEl.ValueKind == JsonValueKind.True || orthoEl.ValueKind == JsonValueKind.False ) )
-            cam.Orthographic = orthoEl.GetBoolean();
-        if ( args.TryGetProperty( "orthographic_height", out var ohEl ) && ohEl.ValueKind == JsonValueKind.Number )
-            cam.OrthographicHeight = ohEl.GetSingle();
+        if ( HandlerBase.TryGetBool( args, "orthographic", out var ortho ) ) cam.Orthographic = ortho;
+        if ( HandlerBase.TryGetFloat( args, "orthographic_height", out var oh ) ) cam.OrthographicHeight = oh;
 
         return HandlerBase.Success( new
         {
@@ -197,23 +191,14 @@ internal static class CameraHandler
         if ( cam == null )
             return HandlerBase.Error( $"No CameraComponent found on '{go.Name}'.", "configure" );
 
-        if ( args.TryGetProperty( "fov", out var fovEl ) && fovEl.ValueKind == JsonValueKind.Number )
-            cam.FieldOfView = fovEl.GetSingle();
-        if ( args.TryGetProperty( "near_clip", out var znEl ) && znEl.ValueKind == JsonValueKind.Number )
-            cam.ZNear = znEl.GetSingle();
-        if ( args.TryGetProperty( "far_clip", out var zfEl ) && zfEl.ValueKind == JsonValueKind.Number )
-            cam.ZFar = zfEl.GetSingle();
-        if ( args.TryGetProperty( "is_main_camera", out var mcEl ) &&
-             ( mcEl.ValueKind == JsonValueKind.True || mcEl.ValueKind == JsonValueKind.False ) )
-            cam.IsMainCamera = mcEl.GetBoolean();
-        if ( args.TryGetProperty( "orthographic", out var orthoEl ) &&
-             ( orthoEl.ValueKind == JsonValueKind.True || orthoEl.ValueKind == JsonValueKind.False ) )
-            cam.Orthographic = orthoEl.GetBoolean();
-        if ( args.TryGetProperty( "orthographic_height", out var ohEl ) && ohEl.ValueKind == JsonValueKind.Number )
-            cam.OrthographicHeight = ohEl.GetSingle();
+        if ( HandlerBase.TryGetFloat( args, "fov", out var fov ) ) cam.FieldOfView = fov;
+        if ( HandlerBase.TryGetFloat( args, "near_clip", out var zn ) ) cam.ZNear = zn;
+        if ( HandlerBase.TryGetFloat( args, "far_clip", out var zf ) ) cam.ZFar = zf;
+        if ( HandlerBase.TryGetBool( args, "is_main_camera", out var mc ) ) cam.IsMainCamera = mc;
+        if ( HandlerBase.TryGetBool( args, "orthographic", out var ortho ) ) cam.Orthographic = ortho;
+        if ( HandlerBase.TryGetFloat( args, "orthographic_height", out var oh ) ) cam.OrthographicHeight = oh;
         HandlerBase.ApplyColor( args, "background_color", c => cam.BackgroundColor = c );
-        if ( args.TryGetProperty( "priority", out var prEl ) && prEl.ValueKind == JsonValueKind.Number )
-            cam.Priority = prEl.GetInt32();
+        if ( HandlerBase.TryGetInt( args, "priority", out var pr ) ) cam.Priority = pr;
 
         return HandlerBase.Confirm( $"Configured CameraComponent on '{go.Name}'." );
     }

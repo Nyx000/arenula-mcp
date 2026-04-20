@@ -77,8 +77,7 @@ internal static class PhysicsHandler
                 var c = go.Components.Create<SphereCollider>();
                 var centerStr = HandlerBase.GetString( args, "center" );
                 if ( centerStr != null ) c.Center = HandlerBase.ParseVector3( centerStr );
-                if ( args.TryGetProperty( "radius", out var radEl ) && radEl.ValueKind == JsonValueKind.Number )
-                    c.Radius = radEl.GetSingle();
+                if ( HandlerBase.TryGetFloat( args, "radius", out var rad ) ) c.Radius = rad;
                 ApplyCommonColliderProps( c, args );
                 return HandlerBase.Success( new
                 {
@@ -94,8 +93,7 @@ internal static class PhysicsHandler
                 if ( startStr != null ) c.Start = HandlerBase.ParseVector3( startStr );
                 var endStr = HandlerBase.GetString( args, "end" );
                 if ( endStr != null ) c.End = HandlerBase.ParseVector3( endStr );
-                if ( args.TryGetProperty( "radius", out var radEl ) && radEl.ValueKind == JsonValueKind.Number )
-                    c.Radius = radEl.GetSingle();
+                if ( HandlerBase.TryGetFloat( args, "radius", out var rad ) ) c.Radius = rad;
                 ApplyCommonColliderProps( c, args );
                 return HandlerBase.Success( new
                 {
@@ -148,17 +146,13 @@ internal static class PhysicsHandler
                 }
                 else
                 {
-                    if ( args.TryGetProperty( "height", out var hEl ) && hEl.ValueKind == JsonValueKind.Number )
-                        c.Height = hEl.GetSingle();
-                    if ( args.TryGetProperty( "radius", out var rEl ) && rEl.ValueKind == JsonValueKind.Number )
-                        c.Radius = rEl.GetSingle();
+                    if ( HandlerBase.TryGetFloat( args, "height", out var h ) ) c.Height = h;
+                    if ( HandlerBase.TryGetFloat( args, "radius", out var r ) ) c.Radius = r;
                     if ( c.Type == HullCollider.PrimitiveType.Cone )
                     {
-                        if ( args.TryGetProperty( "tip_radius", out var trEl ) && trEl.ValueKind == JsonValueKind.Number )
-                            c.Radius2 = trEl.GetSingle();
+                        if ( HandlerBase.TryGetFloat( args, "tip_radius", out var tr ) ) c.Radius2 = tr;
                     }
-                    if ( args.TryGetProperty( "slices", out var slEl ) && slEl.ValueKind == JsonValueKind.Number )
-                        c.Slices = slEl.GetInt32();
+                    if ( HandlerBase.TryGetInt( args, "slices", out var sl ) ) c.Slices = sl;
                 }
                 ApplyCommonColliderProps( c, args );
                 return HandlerBase.Success( new
@@ -177,9 +171,7 @@ internal static class PhysicsHandler
 
     private static void ApplyCommonColliderProps( Collider collider, JsonElement args )
     {
-        if ( args.TryGetProperty( "is_trigger", out var trigEl ) &&
-             ( trigEl.ValueKind == JsonValueKind.True || trigEl.ValueKind == JsonValueKind.False ) )
-            collider.IsTrigger = trigEl.GetBoolean();
+        if ( HandlerBase.TryGetBool( args, "is_trigger", out var trig ) ) collider.IsTrigger = trig;
 
         var surfaceStr = HandlerBase.GetString( args, "surface" );
         if ( !string.IsNullOrEmpty( surfaceStr ) )
@@ -196,10 +188,8 @@ internal static class PhysicsHandler
             }
         }
 
-        if ( args.TryGetProperty( "friction", out var frEl ) && frEl.ValueKind == JsonValueKind.Number )
-            collider.Friction = frEl.GetSingle();
-        if ( args.TryGetProperty( "elasticity", out var elEl ) && elEl.ValueKind == JsonValueKind.Number )
-            collider.Elasticity = elEl.GetSingle();
+        if ( HandlerBase.TryGetFloat( args, "friction", out var fr ) ) collider.Friction = fr;
+        if ( HandlerBase.TryGetFloat( args, "elasticity", out var el ) ) collider.Elasticity = el;
     }
 
     // ── configure_collider ────────────────────────────────────────────
@@ -246,8 +236,7 @@ internal static class PhysicsHandler
         {
             var centerStr = HandlerBase.GetString( args, "center" );
             if ( centerStr != null ) sc.Center = HandlerBase.ParseVector3( centerStr );
-            if ( args.TryGetProperty( "radius", out var rEl ) && rEl.ValueKind == JsonValueKind.Number )
-                sc.Radius = rEl.GetSingle();
+            if ( HandlerBase.TryGetFloat( args, "radius", out var r ) ) sc.Radius = r;
         }
 
         // CapsuleCollider-specific
@@ -257,8 +246,7 @@ internal static class PhysicsHandler
             if ( startStr != null ) cc.Start = HandlerBase.ParseVector3( startStr );
             var endStr = HandlerBase.GetString( args, "end" );
             if ( endStr != null ) cc.End = HandlerBase.ParseVector3( endStr );
-            if ( args.TryGetProperty( "radius", out var crEl ) && crEl.ValueKind == JsonValueKind.Number )
-                cc.Radius = crEl.GetSingle();
+            if ( HandlerBase.TryGetFloat( args, "radius", out var cr ) ) cc.Radius = cr;
         }
 
         // Common properties
@@ -282,18 +270,12 @@ internal static class PhysicsHandler
         var go = SceneHelpers.FindByIdOrThrow( scene, id, "add_rigidbody" );
 
         var rb = go.Components.Create<Rigidbody>();
-        if ( args.TryGetProperty( "mass", out var massEl ) && massEl.ValueKind == JsonValueKind.Number )
-            rb.MassOverride = massEl.GetSingle();
-        if ( args.TryGetProperty( "linear_damping", out var ldEl ) && ldEl.ValueKind == JsonValueKind.Number )
-            rb.LinearDamping = ldEl.GetSingle();
-        if ( args.TryGetProperty( "angular_damping", out var adEl ) && adEl.ValueKind == JsonValueKind.Number )
-            rb.AngularDamping = adEl.GetSingle();
+        if ( HandlerBase.TryGetFloat( args, "mass", out var mass ) ) rb.MassOverride = mass;
+        if ( HandlerBase.TryGetFloat( args, "linear_damping", out var ld ) ) rb.LinearDamping = ld;
+        if ( HandlerBase.TryGetFloat( args, "angular_damping", out var ad ) ) rb.AngularDamping = ad;
         rb.Gravity = HandlerBase.GetBool( args, "gravity", true );
-        if ( args.TryGetProperty( "gravity_scale", out var gsEl ) && gsEl.ValueKind == JsonValueKind.Number )
-            rb.GravityScale = gsEl.GetSingle();
-        if ( args.TryGetProperty( "enhanced_ccd", out var ccdEl ) &&
-             ( ccdEl.ValueKind == JsonValueKind.True || ccdEl.ValueKind == JsonValueKind.False ) )
-            rb.EnhancedCcd = ccdEl.GetBoolean();
+        if ( HandlerBase.TryGetFloat( args, "gravity_scale", out var gs ) ) rb.GravityScale = gs;
+        if ( HandlerBase.TryGetBool( args, "enhanced_ccd", out var ccd ) ) rb.EnhancedCcd = ccd;
 
         return HandlerBase.Success( new
         {
@@ -371,18 +353,12 @@ internal static class PhysicsHandler
         }
 
         var cc = go.Components.Create<CharacterController>();
-        if ( args.TryGetProperty( "radius", out var rEl ) && rEl.ValueKind == JsonValueKind.Number )
-            cc.Radius = rEl.GetSingle();
-        if ( args.TryGetProperty( "height", out var hEl ) && hEl.ValueKind == JsonValueKind.Number )
-            cc.Height = hEl.GetSingle();
-        if ( args.TryGetProperty( "step_height", out var shEl ) && shEl.ValueKind == JsonValueKind.Number )
-            cc.StepHeight = shEl.GetSingle();
-        if ( args.TryGetProperty( "ground_angle", out var gaEl ) && gaEl.ValueKind == JsonValueKind.Number )
-            cc.GroundAngle = gaEl.GetSingle();
-        if ( args.TryGetProperty( "acceleration", out var acEl ) && acEl.ValueKind == JsonValueKind.Number )
-            cc.Acceleration = acEl.GetSingle();
-        if ( args.TryGetProperty( "bounciness", out var bnEl ) && bnEl.ValueKind == JsonValueKind.Number )
-            cc.Bounciness = bnEl.GetSingle();
+        if ( HandlerBase.TryGetFloat( args, "radius", out var r ) ) cc.Radius = r;
+        if ( HandlerBase.TryGetFloat( args, "height", out var h ) ) cc.Height = h;
+        if ( HandlerBase.TryGetFloat( args, "step_height", out var sh ) ) cc.StepHeight = sh;
+        if ( HandlerBase.TryGetFloat( args, "ground_angle", out var ga ) ) cc.GroundAngle = ga;
+        if ( HandlerBase.TryGetFloat( args, "acceleration", out var ac ) ) cc.Acceleration = ac;
+        if ( HandlerBase.TryGetFloat( args, "bounciness", out var bn ) ) cc.Bounciness = bn;
 
         return HandlerBase.Success( new
         {
@@ -424,20 +400,15 @@ internal static class PhysicsHandler
             _         => go.Components.Create<FixedJoint>()
         };
 
-        if ( args.TryGetProperty( "break_force", out var bfEl ) && bfEl.ValueKind == JsonValueKind.Number )
-            joint.BreakForce = bfEl.GetSingle();
-        if ( args.TryGetProperty( "break_torque", out var btEl ) && btEl.ValueKind == JsonValueKind.Number )
-            joint.BreakTorque = btEl.GetSingle();
+        if ( HandlerBase.TryGetFloat( args, "break_force", out var bf ) ) joint.BreakForce = bf;
+        if ( HandlerBase.TryGetFloat( args, "break_torque", out var bt ) ) joint.BreakTorque = bt;
 
         // UprightJoint-specific properties
         if ( joint is UprightJoint uj )
         {
-            if ( args.TryGetProperty( "hertz", out var hzEl ) && hzEl.ValueKind == JsonValueKind.Number )
-                uj.Hertz = hzEl.GetSingle();
-            if ( args.TryGetProperty( "damping_ratio", out var drEl ) && drEl.ValueKind == JsonValueKind.Number )
-                uj.DampingRatio = drEl.GetSingle();
-            if ( args.TryGetProperty( "max_torque", out var mtEl ) && mtEl.ValueKind == JsonValueKind.Number )
-                uj.MaxTorque = mtEl.GetSingle();
+            if ( HandlerBase.TryGetFloat( args, "hertz", out var hz ) ) uj.Hertz = hz;
+            if ( HandlerBase.TryGetFloat( args, "damping_ratio", out var dr ) ) uj.DampingRatio = dr;
+            if ( HandlerBase.TryGetFloat( args, "max_torque", out var mt ) ) uj.MaxTorque = mt;
         }
 
         // Link body_a

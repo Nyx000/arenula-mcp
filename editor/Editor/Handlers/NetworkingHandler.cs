@@ -145,13 +145,9 @@ internal static class NetworkingHandler
         var noParsed = HandlerBase.ResolveEnum<NetworkOrphaned>( orphanedMode, "orphaned_mode", "configure_object" );
         if ( noParsed.HasValue ) net.SetOrphanedMode( noParsed.Value );
 
-        if ( args.TryGetProperty( "always_transmit", out var atEl ) &&
-             ( atEl.ValueKind == JsonValueKind.True || atEl.ValueKind == JsonValueKind.False ) )
-            net.AlwaysTransmit = atEl.GetBoolean();
+        if ( HandlerBase.TryGetBool( args, "always_transmit", out var at ) ) net.AlwaysTransmit = at;
 
-        if ( args.TryGetProperty( "interpolation", out var intEl ) &&
-             ( intEl.ValueKind == JsonValueKind.True || intEl.ValueKind == JsonValueKind.False ) )
-            net.Interpolation = intEl.GetBoolean();
+        if ( HandlerBase.TryGetBool( args, "interpolation", out var int ) ) net.Interpolation = int;
 
         return HandlerBase.Confirm( $"Configured network settings on '{go.Name}'." );
     }

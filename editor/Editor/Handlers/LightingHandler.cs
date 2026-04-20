@@ -136,25 +136,17 @@ internal static class LightingHandler
         // Type-specific properties
         if ( light is PointLight pl )
         {
-            if ( args.TryGetProperty( "range", out var rangeEl ) && rangeEl.ValueKind == JsonValueKind.Number )
-                pl.Radius = rangeEl.GetSingle();
-            else if ( args.TryGetProperty( "radius", out var radEl ) && radEl.ValueKind == JsonValueKind.Number )
-                pl.Radius = radEl.GetSingle();
-            if ( args.TryGetProperty( "attenuation", out var attEl ) && attEl.ValueKind == JsonValueKind.Number )
-                pl.Attenuation = attEl.GetSingle();
+            if ( HandlerBase.TryGetFloat( args, "range", out var range ) ) pl.Radius = range;
+            else if ( HandlerBase.TryGetFloat( args, "radius", out var rad ) ) pl.Radius = rad;
+            if ( HandlerBase.TryGetFloat( args, "attenuation", out var att ) ) pl.Attenuation = att;
         }
         else if ( light is SpotLight sl )
         {
-            if ( args.TryGetProperty( "range", out var rangeEl ) && rangeEl.ValueKind == JsonValueKind.Number )
-                sl.Radius = rangeEl.GetSingle();
-            else if ( args.TryGetProperty( "radius", out var radEl ) && radEl.ValueKind == JsonValueKind.Number )
-                sl.Radius = radEl.GetSingle();
-            if ( args.TryGetProperty( "attenuation", out var attEl ) && attEl.ValueKind == JsonValueKind.Number )
-                sl.Attenuation = attEl.GetSingle();
-            if ( args.TryGetProperty( "cone_outer", out var coEl ) && coEl.ValueKind == JsonValueKind.Number )
-                sl.ConeOuter = coEl.GetSingle();
-            if ( args.TryGetProperty( "cone_inner", out var ciEl ) && ciEl.ValueKind == JsonValueKind.Number )
-                sl.ConeInner = ciEl.GetSingle();
+            if ( HandlerBase.TryGetFloat( args, "range", out var range ) ) sl.Radius = range;
+            else if ( HandlerBase.TryGetFloat( args, "radius", out var rad ) ) sl.Radius = rad;
+            if ( HandlerBase.TryGetFloat( args, "attenuation", out var att ) ) sl.Attenuation = att;
+            if ( HandlerBase.TryGetFloat( args, "cone_outer", out var co ) ) sl.ConeOuter = co;
+            if ( HandlerBase.TryGetFloat( args, "cone_inner", out var ci ) ) sl.ConeInner = ci;
         }
 
         return HandlerBase.Success( new
@@ -249,12 +241,9 @@ internal static class LightingHandler
             ilg.Bounds = BBox.FromPositionAndSize( 0, sv );
         }
 
-        if ( args.TryGetProperty( "probe_density", out var pdEl ) && pdEl.ValueKind == JsonValueKind.Number )
-            ilg.ProbeDensity = pdEl.GetInt32();
-        if ( args.TryGetProperty( "normal_bias", out var nbEl ) && nbEl.ValueKind == JsonValueKind.Number )
-            ilg.NormalBias = nbEl.GetSingle();
-        if ( args.TryGetProperty( "contrast", out var ctEl ) && ctEl.ValueKind == JsonValueKind.Number )
-            ilg.Contrast = ctEl.GetSingle();
+        if ( HandlerBase.TryGetInt( args, "probe_density", out var pd ) ) ilg.ProbeDensity = pd;
+        if ( HandlerBase.TryGetFloat( args, "normal_bias", out var nb ) ) ilg.NormalBias = nb;
+        if ( HandlerBase.TryGetFloat( args, "contrast", out var ct ) ) ilg.Contrast = ct;
 
         var igbStr = HandlerBase.GetString( args, "inside_geometry_behavior" );
         if ( igbStr != null && Enum.TryParse<InsideGeometryBehaviorType>( igbStr, true, out var igb ) )
