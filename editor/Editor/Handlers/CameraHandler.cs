@@ -211,11 +211,7 @@ internal static class CameraHandler
             cam.Orthographic = orthoEl.GetBoolean();
         if ( args.TryGetProperty( "orthographic_height", out var ohEl ) && ohEl.ValueKind == JsonValueKind.Number )
             cam.OrthographicHeight = ohEl.GetSingle();
-        var bgStr = HandlerBase.GetString( args, "background_color" );
-        if ( !string.IsNullOrEmpty( bgStr ) )
-        {
-            try { cam.BackgroundColor = Color.Parse( bgStr ) ?? default; } catch { }
-        }
+        HandlerBase.ApplyColor( args, "background_color", c => cam.BackgroundColor = c );
         if ( args.TryGetProperty( "priority", out var prEl ) && prEl.ValueKind == JsonValueKind.Number )
             cam.Priority = prEl.GetInt32();
 

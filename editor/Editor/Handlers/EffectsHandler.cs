@@ -124,11 +124,7 @@ internal static class EffectsHandler
                 gf.FalloffExponent = feEl.GetSingle();
             if ( args.TryGetProperty( "vertical_falloff_exponent", out var vfeEl ) && vfeEl.ValueKind == JsonValueKind.Number )
                 gf.VerticalFalloffExponent = vfeEl.GetSingle();
-            var colorStr = HandlerBase.GetString( args, "color" );
-            if ( !string.IsNullOrEmpty( colorStr ) )
-            {
-                try { gf.Color = Color.Parse( colorStr ) ?? default; } catch { }
-            }
+            HandlerBase.ApplyColor( args, "color", c => gf.Color = c );
         }
 
         return HandlerBase.Success( new
@@ -249,11 +245,7 @@ internal static class EffectsHandler
             {
                 var tr = go.Components.Create<TextRenderer>();
                 tr.Text = HandlerBase.GetString( args, "text", tr.Text );
-                var colorStr = HandlerBase.GetString( args, "color" );
-                if ( !string.IsNullOrEmpty( colorStr ) )
-                {
-                    try { tr.Color = Color.Parse( colorStr ) ?? default; } catch { }
-                }
+                HandlerBase.ApplyColor( args, "color", c => tr.Color = c );
                 break;
             }
             case "trail":
@@ -389,11 +381,7 @@ internal static class EffectsHandler
         var sizeStr = HandlerBase.GetString( args, "size" );
         if ( sizeStr != null ) sr.Size = HandlerBase.ParseVector2( sizeStr );
 
-        var colorStr = HandlerBase.GetString( args, "color" );
-        if ( !string.IsNullOrEmpty( colorStr ) )
-        {
-            try { sr.Color = Color.Parse( colorStr ) ?? default; } catch { }
-        }
+        HandlerBase.ApplyColor( args, "color", c => sr.Color = c );
 
         var billboard = HandlerBase.GetString( args, "billboard" );
         var bmParsed = HandlerBase.ResolveEnum<SpriteRenderer.BillboardMode>( billboard, "billboard", "create_sprite" );
@@ -446,11 +434,7 @@ internal static class EffectsHandler
         var resolvedModel = HandlerBase.ResolveModel( modelPath, "create_prop" );
         if ( resolvedModel != null ) prop.Model = resolvedModel;
 
-        var tintStr = HandlerBase.GetString( args, "tint" );
-        if ( !string.IsNullOrEmpty( tintStr ) )
-        {
-            try { prop.Tint = Color.Parse( tintStr ) ?? default; } catch { }
-        }
+        HandlerBase.ApplyColor( args, "tint", c => prop.Tint = c );
 
         if ( args.TryGetProperty( "health", out var hEl ) && hEl.ValueKind == JsonValueKind.Number )
             prop.Health = hEl.GetSingle();
@@ -555,11 +539,7 @@ internal static class EffectsHandler
         var sizeStr = HandlerBase.GetString( args, "size" );
         if ( sizeStr != null ) sr.Size = HandlerBase.ParseVector2( sizeStr );
 
-        var colorStr = HandlerBase.GetString( args, "color" );
-        if ( !string.IsNullOrEmpty( colorStr ) )
-        {
-            try { sr.Color = Color.Parse( colorStr ) ?? default; } catch { }
-        }
+        HandlerBase.ApplyColor( args, "color", c => sr.Color = c );
 
         var billboard = HandlerBase.GetString( args, "billboard" );
         var bmParsed = HandlerBase.ResolveEnum<SpriteRenderer.BillboardMode>( billboard, "billboard", "configure_sprite" );
@@ -631,11 +611,7 @@ internal static class EffectsHandler
             if ( resolvedModel != null ) prop.Model = resolvedModel;
         }
 
-        var tintStr = HandlerBase.GetString( args, "tint" );
-        if ( !string.IsNullOrEmpty( tintStr ) )
-        {
-            try { prop.Tint = Color.Parse( tintStr ) ?? default; } catch { }
-        }
+        HandlerBase.ApplyColor( args, "tint", c => prop.Tint = c );
 
         if ( args.TryGetProperty( "health", out var hEl ) && hEl.ValueKind == JsonValueKind.Number )
             prop.Health = hEl.GetSingle();
