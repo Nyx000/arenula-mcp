@@ -166,89 +166,37 @@ internal static class SceneHelpers
     }
 
     // ── Selection helpers ─────────────────────────────────────────────────
+    // Direct calls into Sandbox.SelectionSystem via SceneEditorSession.Selection.
+    // (Previously used reflection — the `using Editor;` dependency was already
+    // in scope, so the reflection was unnecessary defensive code.)
 
-    /// <summary>
-    /// Returns the currently selected GameObjects in the editor, using reflection
-    /// to access the editor Selection API without hard dependencies.
-    /// </summary>
+    /// <summary>Returns the currently selected GameObjects in the editor.</summary>
     internal static List<GameObject> GetSelectedGameObjects()
     {
         var result = new List<GameObject>();
-        try
-        {
-            var session = SceneEditorSession.Active;
-            if ( session == null ) return result;
-            var selProp = session.GetType().GetProperty( "Selection",
-                System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance );
-            var selObj = selProp?.GetValue( session );
-            if ( selObj == null ) return result;
-            if ( selObj is IEnumerable<object> objs )
-                foreach ( var o in objs )
-                    if ( o is GameObject go ) result.Add( go );
-        }
-        catch { }
+        var sel = SceneEditorSession.Active?.Selection;
+        if ( sel == null ) return result;
+        foreach ( var o in sel )
+            if ( o is GameObject go ) result.Add( go );
         return result;
     }
 
-    /// <summary>
-    /// Sets the editor selection to a single GameObject using reflection.
-    /// </summary>
+    /// <summary>Sets the editor selection to a single GameObject.</summary>
     internal static bool SelectGameObject( GameObject go )
-    {
-        try
-        {
-            var session = SceneEditorSession.Active;
-            if ( session == null ) return false;
-            var selProp = session.GetType().GetProperty( "Selection",
-                System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance );
-            var selObj = selProp?.GetValue( session );
-            if ( selObj == null ) return false;
-            var setMethod = selObj.GetType().GetMethod( "Set", new[] { typeof( GameObject ) } );
-            setMethod?.Invoke( selObj, new object[] { go } );
-            return true;
-        }
-        catch { return false; }
-    }
+        => SceneEditorSession.Active?.Selection?.Set( go ) ?? false;
 
-    /// <summary>
-    /// Clears the editor selection using reflection.
-    /// </summary>
+    /// <summary>Clears the editor selection.</summary>
     internal static bool ClearSelection()
     {
-        try
-        {
-            var session = SceneEditorSession.Active;
-            if ( session == null ) return false;
-            var selProp = session.GetType().GetProperty( "Selection",
-                System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance );
-            var selObj = selProp?.GetValue( session );
-            if ( selObj == null ) return false;
-            var clearMethod = selObj.GetType().GetMethod( "Clear" );
-            clearMethod?.Invoke( selObj, null );
-            return true;
-        }
-        catch { return false; }
+        var sel = SceneEditorSession.Active?.Selection;
+        if ( sel == null ) return false;
+        sel.Clear();
+        return true;
     }
 
-    /// <summary>
-    /// Adds a GameObject to the editor selection using reflection.
-    /// </summary>
+    /// <summary>Adds a GameObject to the editor selection.</summary>
     internal static bool AddToSelection( GameObject go )
-    {
-        try
-        {
-            var session = SceneEditorSession.Active;
-            if ( session == null ) return false;
-            var selProp = session.GetType().GetProperty( "Selection",
-                System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance );
-            var selObj = selProp?.GetValue( session );
-            if ( selObj == null ) return false;
-            var addMethod = selObj.GetType().GetMethod( "Add", new[] { typeof( object ) } );
-            addMethod?.Invoke( selObj, new object[] { go } );
-            return true;
-        }
-        catch { return false; }
-    }
+        => SceneEditorSession.Active?.Selection?.Add( go ) ?? false;
 
     /// <summary>
     /// Gets the world-space bounding box of a GameObject, trying collider bounds first,
