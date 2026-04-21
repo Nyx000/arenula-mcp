@@ -378,7 +378,7 @@ internal static class EffectsHandler
         HandlerBase.ApplyColor( args, "tint", c => prop.Tint = c );
 
         if ( HandlerBase.TryGetFloat( args, "health", out var h ) ) prop.Health = h;
-        if ( HandlerBase.TryGetBool( args, "is_static", out var is ) ) prop.IsStatic = is;
+        if ( HandlerBase.TryGetBool( args, "is_static", out var isStatic ) ) prop.IsStatic = isStatic;
         // Note: Prop.IsFlammable is read-only (derived from model data)
         if ( HandlerBase.TryGetBool( args, "start_asleep", out var sa ) ) prop.StartAsleep = sa;
 
@@ -516,7 +516,7 @@ internal static class EffectsHandler
         HandlerBase.ApplyColor( args, "tint", c => prop.Tint = c );
 
         if ( HandlerBase.TryGetFloat( args, "health", out var h ) ) prop.Health = h;
-        if ( HandlerBase.TryGetBool( args, "is_static", out var is ) ) prop.IsStatic = is;
+        if ( HandlerBase.TryGetBool( args, "is_static", out var isStatic ) ) prop.IsStatic = isStatic;
         // Note: Prop.IsFlammable is read-only (derived from model data)
         if ( HandlerBase.TryGetBool( args, "start_asleep", out var sa ) ) prop.StartAsleep = sa;
 

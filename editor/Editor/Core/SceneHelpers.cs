@@ -151,6 +151,32 @@ internal static class SceneHelpers
         sb.AppendLine( $"{indent}- {go.Name} (ID: {go.Id}){disStr}{tagStr}{compStr}{childStr}" );
     }
 
+    // ── GameObject creation ────────────────────────────────────────────────
+
+    /// <summary>
+    /// Creates a child GameObject in the scene with the standard "create" ritual:
+    /// scene.CreateObject() + Name (from args["name"] or defaultName) + WorldPosition.
+    /// Replaces the 3-line boilerplate at every Create* handler call site.
+    /// </summary>
+    internal static GameObject CreateChildObject( Scene scene, JsonElement args, string defaultName, Vector3 position )
+    {
+        var go = scene.CreateObject();
+        go.Name = HandlerBase.GetString( args, "name" ) ?? defaultName;
+        go.WorldPosition = position;
+        return go;
+    }
+
+    /// <summary>
+    /// As above, but also sets WorldRotation. Used by handlers that take a rotation
+    /// alongside position (currently only camera).
+    /// </summary>
+    internal static GameObject CreateChildObject( Scene scene, JsonElement args, string defaultName, Vector3 position, Rotation rotation )
+    {
+        var go = CreateChildObject( scene, args, defaultName, position );
+        go.WorldRotation = rotation;
+        return go;
+    }
+
     // ── Asset path normalization ──────────────────────────────────────────
 
     /// <summary>

@@ -143,7 +143,7 @@ internal static class NetworkingHandler
 
         if ( HandlerBase.TryGetBool( args, "always_transmit", out var at ) ) net.AlwaysTransmit = at;
 
-        if ( HandlerBase.TryGetBool( args, "interpolation", out var int ) ) net.Interpolation = int;
+        if ( HandlerBase.TryGetBool( args, "interpolation", out var interp ) ) net.Interpolation = interp;
 
         return HandlerBase.Confirm( $"Configured network settings on '{go.Name}'." );
     }

@@ -131,7 +131,7 @@ internal static class PlayerHandler
         if ( offsetStr != null )
             pc.CameraOffset = HandlerBase.ParseVector3( offsetStr );
         if ( HandlerBase.TryGetFloat( args, "eye_distance_from_top", out var ed ) ) pc.EyeDistanceFromTop = ed;
-        if ( HandlerBase.TryGetFloat( args, "pitch_clamp", out var pc ) ) pc.PitchClamp = pc;
+        if ( HandlerBase.TryGetFloat( args, "pitch_clamp", out var pcl ) ) pc.PitchClamp = pcl;
         if ( HandlerBase.TryGetFloat( args, "look_sensitivity", out var ls ) ) pc.LookSensitivity = ls;
         if ( HandlerBase.TryGetBool( args, "use_fov_from_preferences", out var uf ) ) pc.UseFovFromPreferences = uf;
 
