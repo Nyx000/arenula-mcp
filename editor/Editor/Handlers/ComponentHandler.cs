@@ -632,6 +632,17 @@ internal static class ComponentHandler
         if ( el.ValueKind == JsonValueKind.String )
         {
             var str = el.GetString().Trim();
+
+            // MCP's `value` parameter is always a string — when callers pass JSON
+            // (`{"Type":"Range","ConstantA":4,...}`) it arrives here as a String
+            // wrapping that JSON text, not as a JsonValueKind.Object. Detect the
+            // JSON-object shape and re-parse so the object branch below fires.
+            if ( str.StartsWith( "{" ) )
+            {
+                using var doc = JsonDocument.Parse( str );
+                return ParseParticleFloat( doc.RootElement );
+            }
+
             var parts = str.Split( ',' );
 
             if ( parts.Length == 1 )
@@ -690,10 +701,20 @@ internal static class ComponentHandler
         // String "x,y,z" → constant per-axis (most common case).
         if ( el.ValueKind == JsonValueKind.String )
         {
-            var parts = el.GetString().Split( ',' );
+            var str = el.GetString().Trim();
+
+            // Same reason as ParseParticleFloat: MCP value param is always a
+            // string, so a JSON-object input arrives wrapped. Detect and reparse.
+            if ( str.StartsWith( "{" ) )
+            {
+                using var doc = JsonDocument.Parse( str );
+                return ParseParticleVector3( doc.RootElement );
+            }
+
+            var parts = str.Split( ',' );
             if ( parts.Length != 3 )
                 throw new ArgumentException(
-                    $"ParticleVector3 string must be 'x,y,z', got '{el.GetString()}'." );
+                    $"ParticleVector3 string must be 'x,y,z' or '{{X,Y,Z}}' JSON object, got '{str}'." );
 
             var pv = new ParticleVector3();
             pv.X = ConstantParticleFloat( float.Parse( parts[0].Trim(),
