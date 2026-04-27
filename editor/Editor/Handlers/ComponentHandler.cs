@@ -241,7 +241,18 @@ internal static class ComponentHandler
 
         if ( isResourceType )
         {
-            if ( readback == null )
+            // Distinguish "user wanted null" from "lookup failed and returned null".
+            // Caller may legitimately clear a resource property (e.g.
+            // MaterialOverride → null restores the model's default material)
+            // by passing JSON null, an empty string, or the literal "null".
+            // Without this guard, the post-condition fires on every successful clear.
+            bool intentionalNull =
+                valEl.ValueKind == JsonValueKind.Null ||
+                ( valEl.ValueKind == JsonValueKind.String &&
+                  ( string.IsNullOrEmpty( valEl.GetString() ) ||
+                    valEl.GetString() == "null" ) );
+
+            if ( readback == null && !intentionalNull )
                 return HandlerBase.Error(
                     $"Property '{propName}' on {comp.GetType().Name} was set to '{valEl}' but read back as null. " +
                     "Resource lookup likely failed — check that the asset is under 'Assets/' and indexed.",
@@ -250,6 +261,7 @@ internal static class ComponentHandler
 
             verifiedPayload = readback switch
             {
+                null            => new { cleared = true } as object,
                 GameResource gr => new { asset_name = gr.ResourceName, asset_path = gr.ResourcePath } as object,
                 Model mdl       => new { model_path = mdl.ResourcePath } as object,
                 Material mat    => new { material_path = mat.ResourcePath } as object,
@@ -299,6 +311,72 @@ internal static class ComponentHandler
             ParticleFloat.ValueType.CurveRange => "CurveRange(<not-rendered>)",
             _ => "Unknown"
         };
+    }
+
+    private static BBox ParseBBox( JsonElement el )
+    {
+        // Accept three string forms:
+        //   "x1,y1,z1;x2,y2,z2"                     — semicolon separates mins from maxs
+        //   "mins x,y,z, maxs x,y,z"                — get_properties readback format
+        //   "x1,y1,z1,x2,y2,z2"                     — six comma-separated floats
+        if ( el.ValueKind == JsonValueKind.String )
+        {
+            var s = el.GetString().Trim();
+
+            // Form 2: parse "mins x,y,z, maxs x,y,z"
+            if ( s.Contains( "mins" ) && s.Contains( "maxs" ) )
+            {
+                var minsIdx = s.IndexOf( "mins", StringComparison.OrdinalIgnoreCase );
+                var maxsIdx = s.IndexOf( "maxs", StringComparison.OrdinalIgnoreCase );
+                var minsPart = s.Substring( minsIdx + 4, maxsIdx - minsIdx - 4 ).Trim().TrimEnd( ',' ).Trim();
+                var maxsPart = s.Substring( maxsIdx + 4 ).Trim();
+                return new BBox(
+                    HandlerBase.ParseVector3( minsPart ),
+                    HandlerBase.ParseVector3( maxsPart ) );
+            }
+
+            // Form 1: "x1,y1,z1;x2,y2,z2"
+            if ( s.Contains( ';' ) )
+            {
+                var halves = s.Split( ';' );
+                if ( halves.Length != 2 )
+                    throw new ArgumentException(
+                        $"BBox semicolon form must be 'x1,y1,z1;x2,y2,z2', got '{s}'." );
+                return new BBox(
+                    HandlerBase.ParseVector3( halves[0] ),
+                    HandlerBase.ParseVector3( halves[1] ) );
+            }
+
+            // Form 3: six comma-separated floats
+            var parts = s.Split( ',' );
+            if ( parts.Length != 6 )
+                throw new ArgumentException(
+                    $"BBox must be 'x1,y1,z1;x2,y2,z2' or six comma-separated floats, got '{s}'." );
+            return new BBox(
+                new Vector3(
+                    float.Parse( parts[0].Trim(), System.Globalization.CultureInfo.InvariantCulture ),
+                    float.Parse( parts[1].Trim(), System.Globalization.CultureInfo.InvariantCulture ),
+                    float.Parse( parts[2].Trim(), System.Globalization.CultureInfo.InvariantCulture ) ),
+                new Vector3(
+                    float.Parse( parts[3].Trim(), System.Globalization.CultureInfo.InvariantCulture ),
+                    float.Parse( parts[4].Trim(), System.Globalization.CultureInfo.InvariantCulture ),
+                    float.Parse( parts[5].Trim(), System.Globalization.CultureInfo.InvariantCulture ) ) );
+        }
+
+        // JSON object: {"Mins": {x,y,z}, "Maxs": {x,y,z}} or with lowercase keys
+        if ( el.ValueKind == JsonValueKind.Object )
+        {
+            Vector3 mins = default, maxs = default;
+            JsonElement mEl;
+            if ( el.TryGetProperty( "Mins", out mEl ) || el.TryGetProperty( "mins", out mEl ) )
+                mins = (Vector3)ConvertJsonValue( mEl, typeof( Vector3 ) );
+            if ( el.TryGetProperty( "Maxs", out mEl ) || el.TryGetProperty( "maxs", out mEl ) )
+                maxs = (Vector3)ConvertJsonValue( mEl, typeof( Vector3 ) );
+            return new BBox( mins, maxs );
+        }
+
+        throw new ArgumentException(
+            $"Cannot convert {el.ValueKind} to BBox. Use a string or {{Mins,Maxs}} object." );
     }
 
     /// <summary>
@@ -353,6 +431,53 @@ internal static class ComponentHandler
             }
         }
 
+        if ( targetType == typeof( Vector2 ) )
+        {
+            if ( el.ValueKind == JsonValueKind.String )
+                return HandlerBase.ParseVector2( el.GetString() );
+            if ( el.ValueKind == JsonValueKind.Object )
+            {
+                float u = 0, v = 0;
+                if ( el.TryGetProperty( "x", out var xp ) ) u = xp.GetSingle();
+                else if ( el.TryGetProperty( "u", out var up ) ) u = up.GetSingle();
+                if ( el.TryGetProperty( "y", out var yp ) ) v = yp.GetSingle();
+                else if ( el.TryGetProperty( "v", out var vp ) ) v = vp.GetSingle();
+                return new Vector2( u, v );
+            }
+        }
+
+        if ( targetType == typeof( Rotation ) )
+        {
+            // Accept "pitch,yaw,roll" string or {pitch,yaw,roll} object.
+            // Rotation has implicit conversion from Angles, which is constructed
+            // from pitch/yaw/roll in degrees.
+            if ( el.ValueKind == JsonValueKind.String )
+            {
+                var parts = el.GetString().Split( ',' );
+                if ( parts.Length != 3 )
+                    throw new ArgumentException(
+                        $"Rotation must be 'pitch,yaw,roll', got '{el.GetString()}'." );
+                return Rotation.From(
+                    pitch: float.Parse( parts[0].Trim(),
+                        System.Globalization.CultureInfo.InvariantCulture ),
+                    yaw:   float.Parse( parts[1].Trim(),
+                        System.Globalization.CultureInfo.InvariantCulture ),
+                    roll:  float.Parse( parts[2].Trim(),
+                        System.Globalization.CultureInfo.InvariantCulture ) );
+            }
+            if ( el.ValueKind == JsonValueKind.Object )
+            {
+                float pitch = 0, yaw = 0, roll = 0;
+                if ( el.TryGetProperty( "pitch", out var pp ) ) pitch = pp.GetSingle();
+                if ( el.TryGetProperty( "yaw",   out var yp ) ) yaw   = yp.GetSingle();
+                if ( el.TryGetProperty( "roll",  out var rp ) ) roll  = rp.GetSingle();
+                return Rotation.From( pitch, yaw, roll );
+            }
+        }
+
+        if ( targetType == typeof( BBox ) )
+            return ParseBBox( el );
+
         if ( targetType == typeof( Color ) )
         {
             var str = el.ValueKind == JsonValueKind.String ? el.GetString() : el.GetRawText();
@@ -392,6 +517,44 @@ internal static class ComponentHandler
             var path = el.ValueKind == JsonValueKind.String ? el.GetString() : el.GetRawText();
             if ( string.IsNullOrEmpty( path ) || path == "null" ) return null;
             return Model.Load( path );
+        }
+
+        // Handle Sandbox.Material — separate from GameResource (Material's base
+        // is Sandbox.Resource, not Sandbox.GameResource). Has its own static Load
+        // with internal cache.
+        if ( targetType == typeof( Material ) )
+        {
+            var path = el.ValueKind == JsonValueKind.String ? el.GetString() : el.GetRawText();
+            if ( string.IsNullOrEmpty( path ) || path == "null" ) return null;
+            return Material.Load( path );
+        }
+
+        // Generic GameResource — covers Sprite, PrefabFile, ClutterCollection,
+        // TerrainStorage, SoundEvent, and every project-defined GameResource
+        // subclass via ResourceLibrary.Get<T>(path). Reflection-routed so we
+        // don't need a per-type branch for every resource the engine adds.
+        // The post-condition check downstream confirms the load actually
+        // succeeded (returns null + helpful error if asset isn't indexed).
+        if ( typeof( GameResource ).IsAssignableFrom( targetType ) )
+        {
+            var path = el.ValueKind == JsonValueKind.String ? el.GetString() : el.GetRawText();
+            if ( string.IsNullOrEmpty( path ) || path == "null" ) return null;
+
+            // ResourceLibrary.Get<T>(string) — generic method, dispatch via reflection.
+            var getMethod = typeof( ResourceLibrary )
+                .GetMethods( System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static )
+                .FirstOrDefault( m =>
+                    m.Name == "Get" &&
+                    m.IsGenericMethodDefinition &&
+                    m.GetParameters().Length == 1 &&
+                    m.GetParameters()[0].ParameterType == typeof( string ) );
+
+            if ( getMethod == null )
+                throw new InvalidOperationException(
+                    "ResourceLibrary.Get<T>(string) not found via reflection — engine API may have changed." );
+
+            var generic = getMethod.MakeGenericMethod( targetType );
+            return generic.Invoke( null, new object[] { path } );
         }
 
         // Handle Component references by GUID
