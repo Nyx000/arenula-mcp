@@ -127,7 +127,7 @@ internal static class AssetManageHandler
     }
 
     // ── delete ────────────────────────────────────────────────────────────
-    // NEW action — moves to recycle bin
+    // NEW action — permanently deletes the file (no recycle bin)
 
     private static object Delete( JsonElement args )
     {
@@ -144,25 +144,17 @@ internal static class AssetManageHandler
 
         if ( string.IsNullOrEmpty( absPath ) || !System.IO.File.Exists( absPath ) )
             return HandlerBase.Error( $"Asset file not found: '{path}'.", "delete" );
+        HandlerBase.RequireUnderProjectRoot( absPath );
 
         try
         {
             System.IO.File.Delete( absPath );
 
-            return HandlerBase.Confirm( $"Deleted '{path}'." );
+            return HandlerBase.Confirm( $"Permanently deleted '{path}'." );
         }
-        catch ( Exception )
+        catch ( Exception ex )
         {
-            // Fallback: regular delete if recycle bin API not available
-            try
-            {
-                System.IO.File.Delete( absPath );
-                return HandlerBase.Confirm( $"Deleted '{path}' (permanent — recycle bin API not available)." );
-            }
-            catch ( Exception ex2 )
-            {
-                return HandlerBase.Error( $"Failed to delete: {ex2.Message}", "delete" );
-            }
+            return HandlerBase.Error( $"Failed to delete: {ex.Message}", "delete" );
         }
     }
 
@@ -188,6 +180,7 @@ internal static class AssetManageHandler
 
         if ( string.IsNullOrEmpty( absPath ) || !System.IO.File.Exists( absPath ) )
             return HandlerBase.Error( $"Asset file not found: '{path}'.", "rename" );
+        HandlerBase.RequireUnderProjectRoot( absPath );
 
         try
         {
@@ -199,6 +192,7 @@ internal static class AssetManageHandler
                 newName += ext;
 
             var newAbsPath = System.IO.Path.Combine( dir, newName );
+            HandlerBase.RequireUnderProjectRoot( newAbsPath );
             System.IO.File.Move( absPath, newAbsPath );
 
             // Re-register the moved file with the asset system
@@ -245,17 +239,17 @@ internal static class AssetManageHandler
 
         if ( string.IsNullOrEmpty( absPath ) || !System.IO.File.Exists( absPath ) )
             return HandlerBase.Error( $"Asset file not found: '{path}'.", "move" );
+        HandlerBase.RequireUnderProjectRoot( absPath );
 
         try
         {
             var fileName = System.IO.Path.GetFileName( absPath );
 
             // Resolve destination as relative to the project root
-            var projectRoot = HandlerBase.GetProjectRoot();
-            if ( string.IsNullOrEmpty( projectRoot ) )
+            var destAbsDir = HandlerBase.ResolveProjectPath( destination );
+            if ( destAbsDir == null )
                 return HandlerBase.Error( "Could not determine project root directory.", "move" );
 
-            var destAbsDir = System.IO.Path.Combine( projectRoot, destination.Replace( '/', System.IO.Path.DirectorySeparatorChar ) );
             if ( !System.IO.Directory.Exists( destAbsDir ) )
                 System.IO.Directory.CreateDirectory( destAbsDir );
 

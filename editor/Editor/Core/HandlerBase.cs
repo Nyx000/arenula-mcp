@@ -351,19 +351,38 @@ internal static class HandlerBase
     }
 
     /// <summary>
-    /// Resolve a relative path to an absolute path under the project root.
-    /// Returns null (with error message) if the project root cannot be determined.
+    /// Resolve a path to an absolute path under the project root.
+    /// Returns null if the project root cannot be determined.
+    /// Throws InvalidOperationException if the path resolves outside the project root.
     /// </summary>
     internal static string ResolveProjectPath( string relativePath )
     {
-        if ( System.IO.Path.IsPathRooted( relativePath ) )
-            return relativePath;
-
         var root = GetProjectRoot();
         if ( string.IsNullOrEmpty( root ) )
             return null;
 
-        return System.IO.Path.Combine( root, relativePath.Replace( '/', System.IO.Path.DirectorySeparatorChar ) );
+        var full = System.IO.Path.GetFullPath( System.IO.Path.Combine( root, relativePath.Replace( '/', System.IO.Path.DirectorySeparatorChar ) ) );
+        RequireUnderProjectRoot( full );
+        return full;
+    }
+
+    /// <summary>
+    /// Throws InvalidOperationException unless absPath (after normalization) is inside the project root.
+    /// </summary>
+    internal static void RequireUnderProjectRoot( string absPath )
+    {
+        var root = GetProjectRoot();
+        if ( string.IsNullOrEmpty( root ) )
+            throw new InvalidOperationException( "Could not determine project root directory." );
+
+        var rootFull = System.IO.Path.GetFullPath( root ).TrimEnd( System.IO.Path.DirectorySeparatorChar, System.IO.Path.AltDirectorySeparatorChar )
+            + System.IO.Path.DirectorySeparatorChar;
+        // Trailing separator on both sides: accepts the root itself, rejects siblings like "C:\proj-evil".
+        var full = System.IO.Path.GetFullPath( absPath ).TrimEnd( System.IO.Path.DirectorySeparatorChar, System.IO.Path.AltDirectorySeparatorChar )
+            + System.IO.Path.DirectorySeparatorChar;
+        if ( !full.StartsWith( rootFull, StringComparison.OrdinalIgnoreCase ) )
+            throw new InvalidOperationException(
+                $"Path '{absPath}' resolves outside the project root. Use a path relative to the project, e.g. 'Assets/name.ext'." );
     }
 
     // ── Cleanup helpers (refactor-cleanup.md Cards 1/3/6/7) ───────────

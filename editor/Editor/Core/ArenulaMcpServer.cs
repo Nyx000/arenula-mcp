@@ -240,9 +240,17 @@ public static class ArenulaMcpServer
             var req = context.Request;
             var res = context.Response;
 
-            res.Headers.Add( "Access-Control-Allow-Origin",  "*" );
-            res.Headers.Add( "Access-Control-Allow-Methods", "GET, POST, OPTIONS" );
-            res.Headers.Add( "Access-Control-Allow-Headers", "*" );
+            // Browsers always send Origin on cross-site and DNS-rebound requests; native MCP
+            // clients (Claude Code, curl) send none, so a missing Origin is allowed.
+            var origin = req.Headers["Origin"];
+            if ( origin != null )
+            {
+                if ( !IsLocalOrigin( origin ) ) { res.StatusCode = 403; res.Close(); return; }
+                res.Headers.Add( "Access-Control-Allow-Origin",  origin );
+                res.Headers.Add( "Vary",                         "Origin" );
+                res.Headers.Add( "Access-Control-Allow-Methods", "GET, POST, OPTIONS" );
+                res.Headers.Add( "Access-Control-Allow-Headers", "*" );
+            }
 
             if ( req.HttpMethod == "OPTIONS" ) { res.StatusCode = 200; res.Close(); return; }
 
@@ -268,6 +276,16 @@ public static class ArenulaMcpServer
         {
             try { LogError( $"Unhandled error in MCP HandleContext: {ex.Message}" ); } catch { }
         }
+    }
+
+    private static bool IsLocalOrigin( string origin )
+    {
+        if ( !Uri.TryCreate( origin, UriKind.Absolute, out var uri ) ) return false;
+        if ( uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps ) return false;
+        var host = uri.Host;
+        return string.Equals( host, "localhost", StringComparison.OrdinalIgnoreCase )
+            || host == "127.0.0.1"
+            || host == "[::1]";
     }
 
     // ── SSE connection ─────────────────────────────────────────────────────
