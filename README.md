@@ -27,8 +27,8 @@ For the agent instructions that ship with the engine, run `sbox-cli --skill`. Th
 |---|---|
 | Editor tools (`editor/`) | The first-party MCP server, through `sbox-cli` |
 | Docs server (`docs/`) | The official docs, which serve markdown; index at <https://sbox.game/llms.txt> |
-| API server (`api/`) | The schema-based lookup in [sbox-context](https://github.com/Nyx000/sbox-context) (`tools/apiquery.py`) |
-| Schema generator (`schemagen/`) | Now carried in [sbox-context](https://github.com/Nyx000/sbox-context) under `tools/schemagen` |
+| API server (`api/`) | The official API reference at <https://sbox.game/api> |
+| Schema generator (`schemagen/`) | Stays in this repo, unmaintained |
 
 ## The code
 
