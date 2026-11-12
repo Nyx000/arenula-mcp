@@ -1,3 +1,6 @@
+> **Retired.** This project is retired and the repository is archived; no contributions are accepted.
+> See the [README](README.md) for what to use instead.
+
 # Contributing to Arenula
 
 ## Setup

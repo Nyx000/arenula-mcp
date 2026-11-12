@@ -1,143 +1,45 @@
-# Arenula
+# Arenula (retired)
 
-**[nyx000.github.io/arenula-mcp](https://nyx000.github.io/arenula-mcp/)**
+This project is retired and the repository is archived. Use the MCP server that ships with s&box instead: see the official [MCP Server docs](https://sbox.game/dev/doc/editor/mcp-server).
 
-MCP server suite for the [s&box](https://sbox.game) game engine. Connects AI coding assistants to the s&box editor — reading scenes, creating objects, compiling code, managing assets, and more.
+## Why
 
-Designed following [Anthropic's MCP best practices](https://www.anthropic.com/engineering/writing-tools-for-agents): omnibus tools with action enums, rich descriptions with negative guidance, trimmed responses, actionable errors.
+The s&box editor has shipped its own MCP server since engine build 26.07.08. Since build 26.10.13, agents connect to it through `sbox-cli`, which ships with every s&box install in `<engine>/bin/managed/`. Its tools cover scenes, components, assets, Hammer maps, play mode, the console, compile results and screenshots, and projects can add their own tools with the `[McpTool]` attribute, so this project's editor plugin is no longer needed.
 
-*Arenula* — Latin for "grain of sand". One grain in the sandbox.
+## Moving over
 
-## Response envelope
+1. Remove this project's entries from your MCP client config (`.mcp.json` in your s&box project, or wherever you added them): `editor` (SSE on `http://localhost:8098/sse`), `api` and `docs`.
+2. Delete the editor plugin from your project: `Libraries/arenula_mcp/`.
+3. Register `sbox-cli` with your client, from your project folder, while the editor has the project open. For Claude Code:
 
-Mutation tools return JSON with these fields:
+   ```
+   claude mcp add sbox -- "<engine>/bin/managed/sbox-cli.exe" --connect
+   ```
 
-- **`message`** — short human-readable confirmation.
-- **`verified`** — (optional) read-back of state after the mutation, so callers can confirm the change actually stuck. E.g. after `component.add`: `{ "component_exists": true, "component_type": "ModelRenderer" }`. After `terrain.configure_clutter`: `{ "clutter_assigned": "volcano_ground", "seed": 42, "mode": "Infinite" }`. When this field is missing the caller should assume the mutation is unverified.
-- **`warnings`** — (optional) array of per-field partial-success notes, each `{ field, message, suggestion? }`. Used where the main operation succeeded but some sub-step was skipped — e.g. `networking.add_helper` with a mix of valid and invalid spawn-point IDs will return the helper wired up and a warning per bad ID.
+   `<engine>` is the folder containing `sbox.exe`. Other MCP clients run the same command as a stdio server. The editor accepts connections unless **Project Settings > AI > Enable MCP Communication** is off.
+4. Only a few entry points are listed up front; agents find the rest with `search_tools`.
 
-Errors still return the standard `{ error, action, suggestion }` body with `isError: true`. Any user-facing value that can't be resolved to a real engine resource now errors with an actionable suggestion rather than silently no-op'ing.
+For the agent instructions that ship with the engine, run `sbox-cli --skill`. The [docs page](https://sbox.game/dev/doc/editor/mcp-server) covers writing your own tools; at the time of writing, its connection steps still describe the fixed-port HTTP server that build 26.10.13 replaced with `sbox-cli`.
 
-## Servers
+## Where each part went
 
-| Server | What it does | Runtime | Transport |
-|--------|-------------|---------|-----------|
-| **Editor** | Scene manipulation, compilation, assets, terrain | C# plugin inside s&box | SSE `:8098` |
-| **API** | Offline type/member reference (~1,800 types, ~15,000 members), PBR texture fetching | Node.js | stdio |
-| **Docs** | Narrative docs from sbox.game (raw markdown via `.md` endpoints) | Node.js | stdio |
+| This repo offered | Use now |
+|---|---|
+| Editor tools (`editor/`) | The first-party MCP server, through `sbox-cli` |
+| Docs server (`docs/`) | The official docs, which serve markdown; index at <https://sbox.game/llms.txt> |
+| API server (`api/`) | The schema-based lookup in [sbox-context](https://github.com/Nyx000/sbox-context) (`tools/apiquery.py`) |
+| Schema generator (`schemagen/`) | Now carried in [sbox-context](https://github.com/Nyx000/sbox-context) under `tools/schemagen` |
 
-## Setup
+## The code
 
-### 1. Clone Arenula-MCP
+The code stays here, unmaintained, for reference, under the existing licences (GPL-3.0 for the editor plugin, MIT for the API, docs and schemagen; see [`LICENSE`](LICENSE), which also records where each part came from).
 
-Clone or download this repo somewhere on your machine. This is where the API and Docs servers will live — they don't need to be inside your s&box project.
+The previous README is in the git history at `d61fa75`: [README.md at d61fa75](https://github.com/Nyx000/arenula-mcp/blob/d61fa75/README.md).
 
-```
-C:\Projects\Arenula-MCP\       <-- can be anywhere you like
-  editor/                      goes into your s&box project (step 2)
-  api/                         stays here, runs from here
-  docs/                        stays here, runs from here
-```
-
-### 2. Editor plugin
-
-Copy `editor/` into your s&box project's Libraries folder:
-
-```
-YourProject/
-  Libraries/
-    arenula_mcp/               <-- copy the contents of editor/ here
-      Editor/
-        Core/
-        Handlers/
-      sbox_mcp.sbproj
-```
-
-Open s&box — Arenula compiles automatically and starts the MCP server on port 8098.
-
-### 3. Build API & Docs
-
-From the Arenula-MCP root, install and build both Node.js servers:
-
-```bash
-npm run setup        # installs dependencies and builds both servers
-```
-
-This builds `api/dist/index.js` and `docs/dist/index.js` — those are the files your AI client will point to.
-
-### 4. Configure your AI client
-
-Add a `.mcp.json` file to your s&box project root (or copy `.mcp.json.example`). Update the paths to where you cloned Arenula-MCP:
-
-```json
-{
-  "mcpServers": {
-    "editor": {
-      "type": "sse",
-      "url": "http://localhost:8098/sse"
-    },
-    "api": {
-      "command": "node",
-      "args": ["C:/Projects/Arenula-MCP/api/dist/index.js"],
-      "env": {
-        "SBOX_API_URL": "https://cdn.sbox.game/releases/..."
-      }
-    },
-    "docs": {
-      "command": "node",
-      "args": ["C:/Projects/Arenula-MCP/docs/dist/index.js"]
-    }
-  }
-}
-```
-
-Replace `C:/Projects/Arenula-MCP` with wherever you cloned the repo. Get the latest API schema URL from [sbox.game/api/schema](https://sbox.game/api/schema) (click Download, copy URL).
-
-Tools appear as `mcp__editor__*`, `mcp__api__*`, `mcp__docs__*` in your AI client.
-
-## Editor Tools
-
-23 omnibus tools, 182 actions. Each tool takes a required `action` parameter.
-
-| Tool | Actions | Count |
-|------|---------|-------|
-| **scene** | summary, hierarchy, statistics, find, find_in_radius, get_details, prefab_instances | 7 |
-| **gameobject** | create, destroy, duplicate, reparent, rename, enable, set_tags, set_transform, batch_transform | 9 |
-| **component** | add, remove, set_property, set_enabled, get_properties, get_types, copy | 7 |
-| **compile** | trigger, status, errors, generate_solution, wait | 5 |
-| **prefab** | instantiate, get_structure, get_instances, break, update, create, save_overrides, revert, get_overrides | 9 |
-| **asset_query** | browse, search, open, get_dependencies, get_model_info, get_material_properties, get_mesh_info, get_bounds, get_unsaved, get_status, get_json, get_references | 12 |
-| **asset_manage** | create, delete, rename, move, save, reload, get_references | 7 |
-| **editor** | select, get/set_selected, clear/frame_selection, get_play_state, start/stop_play, get_log, save_scene, save_scene_as, save_all, undo/redo, console_list, console_run, open_code_file, get/set_preferences | 19 |
-| **session** | list, set_active, load_scene | 3 |
-| **lighting** | create, configure, create_skybox, set_skybox | 4 |
-| **physics** | add_collider, configure_collider, add_rigidbody, create_model_physics, create_character_controller, create_joint | 6 |
-| **audio** | create, configure | 2 |
-| **effects** | create, configure_particle, configure_post_processing, configure_sprite, configure_prop, configure_world_panel | 6 |
-| **camera** | create, configure, capture_viewport, capture_tour, orbit_capture | 5 |
-| **mesh** | create_block, create_plane, create_cylinder, create_wedge, create_arch, create_clutter, extrude_faces, remove_faces, add_face, clip_faces, scale_mesh, thicken_faces, bevel_edges, bevel_vertices, split_edges, quad_slice_faces, dissolve_edges, bridge_edges, connect_vertices, flip_faces, extend_edges, set_face_material, set_texture_params, vertex ops, get_info | 27 |
-| **navmesh** | create_agent, create_area, create_link, generate, generate_tile, unload_tile, set_defer_generation, get_status, query_path | 9 |
-| **cloud** | search, get_package, get_versions, mount | 4 |
-| **project** | get_collision, set_collision_rule, get_input, get_info | 4 |
-| **terrain** | create, configure, get_info, get_height, get_height_region, set_height, noise, erode, stamp, add/remove_material, get_material_at, blend_materials, set_hole, paint_material, import/export_heightmap, sync, configure_clutter, regenerate_clutter, clear_clutter | 21 |
-| **trace** | ray, sphere_cast, box_cast, sample_grid, multi_ray | 5 |
-| **player** | create, configure_movement, configure_camera, configure_body, configure_interaction | 5 |
-| **networking** | add_helper, configure_object, get_status | 3 |
-| **schema** | export, info, clear | 3 |
-
-## Architecture
-
-33 C# source files — 9 core infrastructure, 24 per-tool handlers (incl. `ConsoleHandler`).
-
-![Architecture](architecture.png)
-
-## Attribution
+## Credits
 
 - Editor based on [Ozmium MCP Server](https://github.com/ozmium7/ozmium-mcp-server-for-sbox) by ozmium7 (GPL-3.0)
 - API based on [sbox-api-mcp](https://github.com/sofianebel/sbox-api-mcp) by sofianebel (MIT)
 - Docs based on [sbox-docs-mcp](https://github.com/sofianebel/sbox-docs-mcp) by sofianebel (MIT)
 
-## License
-
-GPL-3.0 (Editor) · MIT (API, Docs, schemagen) — see [`LICENSE`](LICENSE) for why the split
-exists and which one applies to code you copy.
+Licence terms for each part: [`LICENSE`](LICENSE).
